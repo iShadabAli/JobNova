@@ -1,0 +1,371 @@
+
+## 1️⃣ Presentation Layer (Frontend)
+
+* UI
+* Dashboards
+* Forms
+* Language toggle
+* Voice UI
+
+## 2️⃣ Business Logic Layer (Application / Server)
+
+* Authentication logic
+* Matching engine
+* Rating calculation
+* Role-based access control
+* AI processing
+* Job workflow logic
+
+## 3️⃣ Data Layer (Database)
+
+* Users
+* Profiles
+* Jobs
+* Ratings
+* Notifications
+* Time exchange records
+
+---
+
+# 🔹 High-Level 3-Tier Structure
+
+```
+Presentation Layer (React Frontend)
+        ↓
+Business Logic Layer (Node.js / Express APIs)
+        ↓
+Data Layer (Supabase PostgreSQL)
+```
+
+---
+
+# 🔹 NOW: Complete Modules Mapped into 3-Tier Architecture
+
+---
+
+# 🟦 MODULE 1: Authentication & Role Management
+
+## 🖥 Presentation Layer
+
+* Registration page (id + Password)
+* Login page
+* Role selection dropdown
+* Password reset UI
+
+## ⚙ Business Logic Layer
+
+* Validate credentials
+* Hash passwords
+* Generate JWT token
+* Role-based redirection
+* Admin-only role change logic
+
+## 🗄 Data Layer
+
+Tables:
+
+* `users`
+* `roles`
+* `sessions`
+
+Stored:
+
+* phone_number
+* hashed_password
+* role
+* account_status
+
+---
+
+# 🟦 MODULE 2: Blue-Collar Worker Dashboard
+
+## 🖥 Presentation Layer
+
+* Urdu-first dashboard
+* Large action buttons
+* Job list & map view
+* Availability form
+* Voice search UI
+
+## ⚙ Business Logic Layer
+
+* Fetch nearby jobs
+* Filter by skills
+* Apply to job
+* Update availability
+* Fetch ratings
+
+## 🗄 Data Layer
+
+Tables:
+
+* `profiles`
+* `jobs`
+* `job_applications`
+* `availability`
+* `ratings`
+
+---
+
+# 🟦 MODULE 3: White-Collar Worker Dashboard
+
+## 🖥 Presentation Layer
+
+* Professional profile UI
+* CV upload page
+* Job search filters
+* Application tracking page
+
+## ⚙ Business Logic Layer
+
+* Resume parsing logic
+* Experience filtering
+* Job application handling
+* Application status tracking
+
+## 🗄 Data Layer
+
+Tables:
+
+* `profiles`
+* `cv_storage`
+* `jobs`
+* `job_applications`
+
+---
+
+# 🟦 MODULE 4: Employer Dashboard (Dual Mode)
+
+## 🖥 Presentation Layer
+
+* Mode toggle (Blue / White hiring)
+* Job posting form
+* Applicant management UI
+* Rating interface
+
+## ⚙ Business Logic Layer
+
+* Validate job type
+* Match workers
+* Assign job
+* Close job
+* Trigger rating workflow
+
+## 🗄 Data Layer
+
+Tables:
+
+* `jobs`
+* `job_assignments`
+* `ratings`
+
+---
+
+# 🟦 MODULE 5: User Profile & Skill Management
+
+## 🖥 Presentation Layer
+
+* Edit profile page
+* Skill selection UI
+* Availability management UI
+
+## ⚙ Business Logic Layer
+
+* Validate skill tags
+* Calculate rating average
+* Store preferred radius
+* Connect profile to matching engine
+
+## 🗄 Data Layer
+
+Tables:
+
+* `profiles`
+* `skills`
+* `user_skills`
+
+---
+
+# 🟦 MODULE 6: Job Posting & Matching Engine
+
+## 🖥 Presentation Layer
+
+* Job listing pages
+* Filter components
+
+## ⚙ Business Logic Layer (CORE LOGIC MODULE)
+
+* Skill-based matching
+* Location-based filtering
+* Experience-based filtering
+* Availability check
+* AI resume-skill comparison
+
+## 🗄 Data Layer
+
+Tables:
+
+* `jobs`
+* `job_filters`
+* `matching_logs`
+
+---
+
+# 🟦 MODULE 7: Location-Based Job Discovery
+
+## 🖥 Presentation Layer
+
+* Google Maps UI
+* Radius slider
+
+## ⚙ Business Logic Layer
+
+* Convert address to coordinates
+* Filter jobs within radius
+* Secure location handling
+
+## 🗄 Data Layer
+
+Fields inside:
+
+* `jobs` (latitude, longitude)
+
+---
+
+# 🟦 MODULE 8: Time Exchange System
+
+## 🖥 Presentation Layer
+
+* Hourly job UI
+* Status tracking screen
+
+## ⚙ Business Logic Layer
+
+* Validate job duration
+* Change job status:
+
+  * Pending
+  * In Progress
+  * Completed
+* Prevent permanent job misuse
+
+## 🗄 Data Layer
+
+Tables:
+
+* `time_exchange_jobs`
+* `job_status_history`
+
+---
+
+# 🟦 MODULE 9: Rating & Review System
+
+## 🖥 Presentation Layer
+
+* Rating form (1–5 stars)
+* Review text box
+
+## ⚙ Business Logic Layer
+
+* Allow rating only if job completed
+* Calculate average rating
+* Prevent duplicate rating
+
+## 🗄 Data Layer
+
+Tables:
+
+* `ratings`
+* `rating_summary`
+
+---
+
+# 🟦 MODULE 10: Urdu Speech-to-Text & AI
+
+## 🖥 Presentation Layer
+
+* Voice recording button
+* Voice result display
+
+## ⚙ Business Logic Layer
+
+* Send audio to speech API
+* Convert to text
+* Map text to skill keywords
+* Trigger job search
+
+## 🗄 Data Layer
+
+Optional:
+
+* `voice_logs`
+
+---
+
+# 🟦 MODULE 11: Notifications & Alerts
+
+## 🖥 Presentation Layer
+
+* Notification dropdown
+* Alert badges
+
+## ⚙ Business Logic Layer
+
+* Trigger notification on:
+
+  * Job assigned
+  * Job accepted
+  * Job completed
+* Optional SMS trigger
+
+## 🗄 Data Layer
+
+Tables:
+
+* `notifications`
+* `sms_logs`
+
+---
+
+# 🟦 MODULE 12: Admin Dashboard & Monitoring
+
+## 🖥 Presentation Layer
+
+* User management UI
+* Analytics dashboard
+* Reports screen
+
+## ⚙ Business Logic Layer
+
+* Block/suspend accounts
+* Delete fake jobs
+* Generate analytics
+* View system logs
+
+## 🗄 Data Layer
+
+Tables:
+
+* `users`
+* `jobs`
+* `ratings`
+* `system_logs`
+
+---
+
+# 🔁 FINAL 3-TIER FLOW EXAMPLE
+
+### Example: Blue-Collar Worker Applies to Job
+
+1️⃣ Presentation Layer
+User clicks “Apply”
+
+2️⃣ Business Logic Layer
+
+* Validate worker role
+* Check availability
+* Save application
+
+3️⃣ Data Layer
+Insert record in `job_applications`
+
