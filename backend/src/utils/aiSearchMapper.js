@@ -58,7 +58,6 @@ Rules:
             const jobTitles = JSON.parse(cleanedText);
             
             if (Array.isArray(jobTitles) && jobTitles.length > 0) {
-                console.log(`[AI Search Mapper] Mapped "${rawQuery}" ->`, jobTitles);
                 return jobTitles;
             }
         }

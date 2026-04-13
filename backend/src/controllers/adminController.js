@@ -65,6 +65,35 @@ const adminController = {
             console.error('Error in getLogs:', error);
             res.status(500).json({ success: false, message: error.message });
         }
+    },
+
+    // GET /api/admin/verifications/pending
+    getPendingVerifications: async (req, res) => {
+        try {
+            const verifications = await adminService.getPendingVerifications();
+            res.json({ success: true, data: verifications });
+        } catch (error) {
+            console.error('Error in getPendingVerifications:', error);
+            res.status(500).json({ success: false, message: error.message });
+        }
+    },
+
+    // PUT /api/admin/verifications/:userId/status
+    updateVerificationStatus: async (req, res) => {
+        try {
+            const { userId } = req.params;
+            const { status } = req.body;
+            
+            if (!['verified', 'rejected'].includes(status)) {
+                return res.status(400).json({ success: false, message: 'Invalid status' });
+            }
+
+            const updated = await adminService.updateVerificationStatus(userId, status, req.user.id);
+            res.json({ success: true, data: updated, message: `Verification status updated to ${status}` });
+        } catch (error) {
+            console.error('Error in updateVerificationStatus:', error);
+            res.status(500).json({ success: false, message: error.message });
+        }
     }
 };
 

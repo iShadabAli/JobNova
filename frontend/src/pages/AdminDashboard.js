@@ -8,6 +8,7 @@ const AdminDashboard = ({ user, logout }) => {
     const [jobs, setJobs] = useState([]);
     const [logs, setLogs] = useState([]);
     const [complaints, setComplaints] = useState([]);
+    const [verifications, setVerifications] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [actionLoading, setActionLoading] = useState(null);
@@ -70,6 +71,16 @@ const AdminDashboard = ({ user, logout }) => {
         }
     };
 
+    const fetchVerifications = async () => {
+        try {
+            const res = await fetch(`${API_URL}/admin/verifications/pending`, { headers: getHeaders() });
+            const result = await res.json();
+            if (result.success) setVerifications(result.data);
+        } catch (err) {
+            console.error('Error fetching verifications:', err);
+        }
+    };
+
     // ---- COMPLAINT ACTION ----
     const handleUpdateComplaintStatus = async (id, status) => {
         const notes = prompt(`Enter admin notes for marking as ${status} (Optional):`);
@@ -95,7 +106,7 @@ const AdminDashboard = ({ user, logout }) => {
     useEffect(() => {
         const loadAll = async () => {
             setLoading(true);
-            await Promise.all([fetchStats(), fetchUsers(), fetchJobs(), fetchLogs(), fetchComplaints()]);
+            await Promise.all([fetchStats(), fetchUsers(), fetchJobs(), fetchLogs(), fetchComplaints(), fetchVerifications()]);
             setLoading(false);
         };
         loadAll();
@@ -119,6 +130,26 @@ const AdminDashboard = ({ user, logout }) => {
             }
         } catch (err) {
             console.error('Error toggling suspend:', err);
+        } finally {
+            setActionLoading(null);
+        }
+    };
+
+    const handleVerificationStatus = async (userId, status) => {
+        setActionLoading(userId);
+        try {
+            const res = await fetch(`${API_URL}/admin/verifications/${userId}/status`, {
+                method: 'PUT',
+                headers: getHeaders(),
+                body: JSON.stringify({ status })
+            });
+            const result = await res.json();
+            if (result.success) {
+                setVerifications(prev => prev.filter(v => v.user_id !== userId));
+                fetchLogs();
+            }
+        } catch (err) {
+            console.error('Error updating verification:', err);
         } finally {
             setActionLoading(null);
         }
@@ -216,6 +247,7 @@ const AdminDashboard = ({ user, logout }) => {
                     { key: 'users', label: '👥 Users', icon: '' },
                     { key: 'jobs', label: '💼 Jobs', icon: '' },
                     { key: 'complaints', label: '⚠️ Complaints', icon: '' },
+                    { key: 'verifications', label: '🛡️ Verifications', icon: '' },
                     { key: 'logs', label: '📜 Logs', icon: '' }
                 ].map(tab => (
                     <button
@@ -626,6 +658,79 @@ const AdminDashboard = ({ user, logout }) => {
                         </div>
                         {filteredComplaints.length === 0 && (
                             <p style={{ textAlign: 'center', color: '#64748b', padding: '2rem' }}>No complaints found.</p>
+                        )}
+                    </div>
+                )}
+
+                {/* ======== VERIFICATIONS TAB ======== */}
+                {activeTab === 'verifications' && (
+                    <div>
+                        <h3 style={{ margin: '0 0 16px', color: '#f8fafc' }}>Pending ID Verifications</h3>
+                        <div style={{ overflowX: 'auto' }}>
+                            <table style={{
+                                width: '100%', borderCollapse: 'collapse',
+                                background: '#1e293b', borderRadius: '12px', overflow: 'hidden'
+                            }}>
+                                <thead>
+                                    <tr style={{ background: '#334155' }}>
+                                        {['User', 'Role', 'Document', 'Actions'].map(h => (
+                                            <th key={h} style={{
+                                                padding: '12px 16px', textAlign: 'left',
+                                                color: '#94a3b8', fontSize: '0.8rem', fontWeight: '600',
+                                                textTransform: 'uppercase', letterSpacing: '0.5px'
+                                            }}>{h}</th>
+                                        ))}
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {verifications.map(v => (
+                                        <tr key={v.user_id} style={{ borderBottom: '1px solid #334155' }}>
+                                            <td style={{ padding: '12px 16px', color: '#f8fafc', fontWeight: '500' }}>
+                                                {v.full_name}
+                                                <div style={{ color: '#94a3b8', fontSize: '0.8rem', marginTop: '4px' }}>
+                                                    {v.users?.phone || v.users?.email}
+                                                </div>
+                                            </td>
+                                            <td style={{ padding: '12px 16px' }}>
+                                                <span style={{
+                                                    padding: '4px 10px', borderRadius: '12px', fontSize: '0.75rem',
+                                                    fontWeight: '600', color: 'white',
+                                                    background: getRoleBadgeColor(v.role),
+                                                    textTransform: 'capitalize'
+                                                }}>
+                                                    {v.role?.replace('_', ' ')}
+                                                </span>
+                                            </td>
+                                            <td style={{ padding: '12px 16px' }}>
+                                                <a href={v.verification_document_url} target="_blank" rel="noopener noreferrer" style={{ color: '#3b82f6', textDecoration: 'none', fontWeight: '500' }}>
+                                                    📄 View Document
+                                                </a>
+                                            </td>
+                                            <td style={{ padding: '12px 16px' }}>
+                                                <div style={{ display: 'flex', gap: '8px' }}>
+                                                    <button
+                                                        onClick={() => handleVerificationStatus(v.user_id, 'verified')}
+                                                        disabled={actionLoading === v.user_id}
+                                                        style={{ padding: '6px 12px', background: '#10b981', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '0.8rem' }}
+                                                    >
+                                                        {actionLoading === v.user_id ? '...' : 'Approve'}
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleVerificationStatus(v.user_id, 'rejected')}
+                                                        disabled={actionLoading === v.user_id}
+                                                        style={{ padding: '6px 12px', background: '#dc2626', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '0.8rem' }}
+                                                    >
+                                                        {actionLoading === v.user_id ? '...' : 'Reject'}
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                        {verifications.length === 0 && (
+                            <p style={{ textAlign: 'center', color: '#64748b', padding: '2rem' }}>No pending verifications.</p>
                         )}
                     </div>
                 )}

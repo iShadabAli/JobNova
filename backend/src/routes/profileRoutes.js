@@ -35,6 +35,7 @@ router.put('/', profileController.updateProfile);
 // New Routes for Module 5
 router.post('/upload-cv', upload.single('cv'), profileController.uploadCV);
 router.post('/upload-avatar', uploadImage.single('avatar'), profileController.uploadAvatar);
+router.post('/upload-verification', upload.single('document'), profileController.uploadVerificationDocument);
 router.get('/hiring-history', profileController.getHiringHistory);
 
 module.exports = router;

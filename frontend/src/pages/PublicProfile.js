@@ -169,7 +169,15 @@ const PublicProfile = () => {
                         )}
                     </div>
 
-                    <h1 style={{ margin: '0 0 12px', fontSize: '2.5rem', color: '#0f172a', fontWeight: 800, letterSpacing: '-0.5px' }}>{fullName}</h1>
+                    <h1 style={{ margin: '0 0 12px', fontSize: '2.5rem', color: '#0f172a', fontWeight: 800, letterSpacing: '-0.5px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}>
+                        {fullName}
+                        {profile?.verification_status === 'verified' && (
+                            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" title="Verified User" style={{marginTop: '4px'}}>
+                                <path d="M12 2C12 2 14.5 1 17 3C19.5 5 19 8 19 8C19 8 22 10 21 13C20 16 17 17 17 17C17 17 16 20 13 21C10 22 8 19 8 19C8 19 5 21 3 19C1 17 2 14 2 14C2 14 0 11 1 8C2 5 5 5 5 5C5 5 6 2 9 2C11.5 2 12 2 12 2Z" fill="#1d9bf0"/>
+                                <path d="M16 9L10.5 14.5L8 12" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+                            </svg>
+                        )}
+                    </h1>
                     
                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap', justifyContent: 'center', marginBottom: '24px' }}>
                         <span style={{

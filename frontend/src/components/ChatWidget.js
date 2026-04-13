@@ -7,7 +7,27 @@ const ChatWidget = ({ currentUser }) => {
     const [sessions, setSessions] = useState([]);
     const [loading, setLoading] = useState(false);
     const [activeSession, setActiveSession] = useState(null);
-    
+    const [myProfileId, setMyProfileId] = useState(null);
+
+    // Fetch the current user's profile ID so we can match against session IDs
+    useEffect(() => {
+        const fetchMyProfileId = async () => {
+            try {
+                const token = sessionStorage.getItem('token');
+                const res = await fetch('http://localhost:5000/api/profile', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    setMyProfileId(data.id);
+                }
+            } catch (error) {
+                console.error('Failed to fetch profile ID for chat:', error);
+            }
+        };
+        fetchMyProfileId();
+    }, []);
+
     // Derive total unread count from the sessions
     const totalUnreadCount = sessions.reduce((sum, session) => sum + (session.unreadCount || 0), 0);
 
@@ -34,7 +54,7 @@ const ChatWidget = ({ currentUser }) => {
         // Initial fetch and start 5s polling interval
         fetchSessions(false);
         const pollInterval = window.setInterval(() => fetchSessions(true), 5000);
-        
+
         return () => window.clearInterval(pollInterval);
     }, []);
 
@@ -62,9 +82,17 @@ const ChatWidget = ({ currentUser }) => {
     };
 
     const getOtherPersonName = (session) => {
+        // Use profile ID matching to reliably determine who the "other person" is
+        if (myProfileId) {
+            const iAmEmployer = session.employer_id === myProfileId;
+            return iAmEmployer
+                ? session.candidate?.full_name
+                : session.employer?.company_name || session.employer?.full_name;
+        }
+        // Fallback to role-based check
         const isEmployer = currentUser.role === 'employer';
-        return isEmployer 
-            ? session.candidate?.full_name 
+        return isEmployer
+            ? session.candidate?.full_name
             : session.employer?.company_name || session.employer?.full_name;
     };
 
@@ -82,10 +110,10 @@ const ChatWidget = ({ currentUser }) => {
     return (
         <div className="chatbox-container">
             {activeSession ? (
-                <ChatBox 
-                    session={activeSession} 
-                    currentUser={currentUser} 
-                    onClose={() => setActiveSession(null)} 
+                <ChatBox
+                    session={activeSession}
+                    currentUser={currentUser}
+                    onClose={() => setActiveSession(null)}
                     onCloseWidget={() => {
                         setActiveSession(null);
                         setIsOpen(false);
@@ -121,8 +149,8 @@ const ChatWidget = ({ currentUser }) => {
                         ) : (
                             <div className="chatbox-sessions-list" style={{ boxShadow: 'none', margin: 0, borderRadius: 0 }}>
                                 {sessions.map(session => (
-                                    <div 
-                                        key={session.id} 
+                                    <div
+                                        key={session.id}
                                         className={`chat-session-item ${session.unreadCount > 0 ? 'unread' : ''}`}
                                         onClick={() => setActiveSession(session)}
                                     >

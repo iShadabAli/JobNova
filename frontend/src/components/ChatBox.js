@@ -5,11 +5,31 @@ const ChatBox = ({ session, currentUser, onClose, onCloseWidget, onSessionUpdate
     const [messages, setMessages] = useState([]);
     const [newMessage, setNewMessage] = useState('');
     const [loading, setLoading] = useState(true);
+    const [myProfileId, setMyProfileId] = useState(null);
     const messagesEndRef = useRef(null);
 
-    // Determine the "other person" in the chat
-    const isEmployer = currentUser.role === 'employer';
-    const otherPersonName = isEmployer 
+    // Fetch the current user's profile ID
+    useEffect(() => {
+        const fetchMyProfileId = async () => {
+            try {
+                const token = sessionStorage.getItem('token');
+                const res = await fetch('http://localhost:5000/api/profile', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    setMyProfileId(data.id);
+                }
+            } catch (error) {
+                console.error('Failed to fetch profile ID for chat:', error);
+            }
+        };
+        fetchMyProfileId();
+    }, []);
+
+    // Determine the "other person" in the chat using profile ID matching
+    const iAmEmployer = myProfileId ? session.employer_id === myProfileId : currentUser.role === 'employer';
+    const otherPersonName = iAmEmployer 
         ? session.candidate?.full_name 
         : session.employer?.company_name || session.employer?.full_name;
     const otherPersonInitials = otherPersonName ? otherPersonName.charAt(0).toUpperCase() : '?';
@@ -144,8 +164,8 @@ const ChatBox = ({ session, currentUser, onClose, onCloseWidget, onSessionUpdate
                     <>
                         <div className="chatbox-date-divider">Start of Chat</div>
                         {messages.map((msg, index) => {
-                            // The user's role determines which session ID holds their profile ID
-                            const isMine = isEmployer ? msg.sender_id === session.employer_id : msg.sender_id === session.candidate_id;
+                            // Use profile ID matching to determine which messages are mine
+                            const isMine = iAmEmployer ? msg.sender_id === session.employer_id : msg.sender_id === session.candidate_id;
                             
                             // Format timestamp nicely
                             const time = new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });

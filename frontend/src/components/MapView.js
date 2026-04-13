@@ -20,7 +20,6 @@ const MapView = () => {
                     });
                 },
                 (error) => {
-                    console.log('Location access denied or unavailable:', error);
                     // Keep default location
                 }
             );

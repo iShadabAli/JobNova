@@ -26,4 +26,8 @@ const complaintController = require('../controllers/complaintController');
 router.get('/complaints', complaintController.getAllComplaints);
 router.put('/complaints/:id/status', complaintController.updateComplaintStatus);
 
+// Verifications
+router.get('/verifications/pending', adminController.getPendingVerifications);
+router.put('/verifications/:userId/status', adminController.updateVerificationStatus);
+
 module.exports = router;

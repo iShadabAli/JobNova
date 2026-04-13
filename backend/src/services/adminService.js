@@ -70,6 +70,25 @@ const adminService = {
     // ---- SYSTEM LOGS ----
     getSystemLogs: async () => {
         return await adminRepository.getSystemLogs();
+    },
+
+    // ---- VERIFICATIONS ----
+    getPendingVerifications: async () => {
+        return await adminRepository.getPendingVerifications();
+    },
+
+    updateVerificationStatus: async (userId, status, adminId) => {
+        const updated = await adminRepository.updateVerificationStatus(userId, status);
+        
+        await adminRepository.createSystemLog(
+            'VERIFICATION_UPDATED',
+            adminId,
+            'user',
+            userId,
+            `Updated verification status for user to ${status}`
+        );
+
+        return updated;
     }
 };
 

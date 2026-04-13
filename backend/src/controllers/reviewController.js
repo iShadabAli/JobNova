@@ -3,11 +3,8 @@ const reviewService = require('../services/reviewService');
 // Submit a Review
 exports.createReview = async (req, res) => {
     try {
-        console.log(`[createReview] Request body:`, req.body);
         const { job_id, reviewee_id, rating, comment } = req.body;
         const reviewer_id = req.user.id; // From middleware
-
-        console.log(`[createReview] Submitting review: job=${job_id}, reviewer=${reviewer_id}, reviewee=${reviewee_id}, rating=${rating}`);
         const avgRating = await reviewService.createReview(job_id, reviewer_id, reviewee_id, rating, comment);
 
         res.status(201).json({ message: 'Review submitted successfully', avg_rating: avgRating });

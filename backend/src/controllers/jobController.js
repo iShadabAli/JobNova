@@ -64,7 +64,6 @@ exports.getMatchedJobs = async (req, res) => {
         const { type, search } = req.query;
         let searchWords = [];
         if (search && search.trim() !== '') {
-            console.log(`[AI Search] Intercepted MatchedJobs search query: "${search}"`);
             searchWords = await aiSearchMapper.getSemanticJobTitles(search);
         }
         const matches = await jobService.getMatchedJobs(userId, type, searchWords);
@@ -86,14 +85,11 @@ exports.getNearbyJobs = async (req, res) => {
         }
 
         let searchWords = [];
-        console.log(`[Nearby Jobs] Received search query: "${search}"`);
         if (search && search.trim() !== '') {
             searchWords = await aiSearchMapper.getSemanticJobTitles(search);
-            console.log(`[Nearby Jobs] Search words mapped: ${JSON.stringify(searchWords)}`);
         }
 
         const nearbyJobs = await jobService.getNearbyJobs(lat, lng, radius, searchWords);
-        console.log(`[Nearby Jobs] Returning ${nearbyJobs.length} jobs`);
         res.status(200).json(nearbyJobs);
     } catch (error) {
         console.error('Nearby Jobs Error:', error);

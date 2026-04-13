@@ -3,7 +3,6 @@ const { supabaseAdmin: supabase } = require('../config/supabase');
 const reviewRepository = {
     // Check if an application linking the two users for the job exists
     verifyApplicationExists: async (job_id, reviewer_id, reviewee_id) => {
-        console.log(`[reviewRepository] Verifying application: job=${job_id}, reviewer=${reviewer_id}, reviewee=${reviewee_id}`);
         // Check if there is ANY application for this job involving either user
         // This is a relaxed check to ensure we don't block valid reviews prematurely
         const { data, error } = await supabase
@@ -16,7 +15,6 @@ const reviewRepository = {
             throw error;
         }
 
-        console.log(`[reviewRepository] Found ${data?.length || 0} applications for this job.`);
         return data && data.length > 0 ? data[0] : null;
     },
 

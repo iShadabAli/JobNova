@@ -13,6 +13,9 @@ const Profile = ({ user, logout }) => {
     const [cvFile, setCvFile] = useState(null);
     const [uploadingCV, setUploadingCV] = useState(false);
     const [uploadingAvatar, setUploadingAvatar] = useState(false);
+    
+    // Verification state
+    const [uploadingVerification, setUploadingVerification] = useState(false);
 
     // Initial Profile State
     const [profile, setProfile] = useState({
@@ -138,6 +141,40 @@ const Profile = ({ user, logout }) => {
             toast(err.message);
         } finally {
             setUploadingAvatar(false);
+        }
+    };
+
+    const handleVerificationUpload = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        setUploadingVerification(true);
+        const formData = new FormData();
+        formData.append('document', file);
+
+        try {
+            const token = sessionStorage.getItem('token');
+            const response = await fetch('http://localhost:5000/api/profile/upload-verification', {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}` },
+                body: formData
+            });
+
+            if (response.ok) {
+                const result = await response.json();
+                setProfile(prev => ({ 
+                    ...prev, 
+                    verification_document_url: result.verification_document_url,
+                    verification_status: result.verification_status
+                }));
+                toast.success('Identity document uploaded successfully. Waiting for admin approval.');
+            } else {
+                throw new Error('Failed to upload verification document');
+            }
+        } catch (err) {
+            toast.error(err.message);
+        } finally {
+            setUploadingVerification(false);
         }
     };
 
@@ -288,7 +325,15 @@ const Profile = ({ user, logout }) => {
                             </label>
                         </div>
                         <div className="profile-text">
-                            <h1>{profile.full_name}</h1>
+                            <h1 style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                {profile.full_name}
+                                {profile.verification_status === 'verified' && (
+                                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" title="Verified User" style={{marginTop: '2px'}}>
+                                        <path d="M12 2C12 2 14.5 1 17 3C19.5 5 19 8 19 8C19 8 22 10 21 13C20 16 17 17 17 17C17 17 16 20 13 21C10 22 8 19 8 19C8 19 5 21 3 19C1 17 2 14 2 14C2 14 0 11 1 8C2 5 5 5 5 5C5 5 6 2 9 2C11.5 2 12 2 12 2Z" fill="#1d9bf0"/>
+                                        <path d="M16 9L10.5 14.5L8 12" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+                                    </svg>
+                                )}
+                            </h1>
                             <p className="role-badge">
                                 {user?.role === 'white_collar' ? 'White Collar Professional' :
                                     user?.role === 'blue_collar' ? 'Skilled Worker' :
@@ -350,6 +395,74 @@ const Profile = ({ user, logout }) => {
                                 onChange={handleChange}
                                 placeholder="City, Country"
                             />
+                        </div>
+
+                        {/* Identity Verification Section */}
+                        <div className="form-group" style={{ 
+                            marginTop: '20px', 
+                            padding: '15px', 
+                            backgroundColor: '#f8fafc', 
+                            border: '1px solid #e2e8f0', 
+                            borderRadius: '8px' 
+                        }}>
+                            <h4 style={{ margin: '0 0 10px 0', color: '#1e293b', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                                Identity Verification
+                            </h4>
+                            
+                            <div style={{ marginBottom: '15px' }}>
+                                <span style={{ fontWeight: '500', color: '#475569' }}>Status: </span>
+                                <span style={{
+                                    display: 'inline-block',
+                                    padding: '4px 10px',
+                                    borderRadius: '12px',
+                                    fontSize: '0.85rem',
+                                    fontWeight: 'bold',
+                                    backgroundColor: profile.verification_status === 'verified' ? '#dcfce7' : 
+                                                     profile.verification_status === 'pending' ? '#fef3c7' : 
+                                                     profile.verification_status === 'rejected' ? '#fee2e2' : '#f1f5f9',
+                                    color: profile.verification_status === 'verified' ? '#166534' : 
+                                           profile.verification_status === 'pending' ? '#92400e' : 
+                                           profile.verification_status === 'rejected' ? '#991b1b' : '#475569',
+                                }}>
+                                    {(profile.verification_status || 'unverified').toUpperCase()}
+                                </span>
+                            </div>
+
+                            {profile.verification_status !== 'verified' && profile.verification_status !== 'pending' && (
+                                <div>
+                                    <p style={{ fontSize: '0.9rem', color: '#64748b', marginBottom: '10px' }}>
+                                        Upload your CNIC, Passport, or Driving License to get a verification badge and build trust.
+                                    </p>
+                                    <input
+                                        type="file"
+                                        id="verification-upload"
+                                        style={{ display: 'none' }}
+                                        accept="image/*,.pdf"
+                                        onChange={handleVerificationUpload}
+                                    />
+                                    <label 
+                                        htmlFor="verification-upload" 
+                                        className="btn btn-outline-primary"
+                                        style={{ display: 'block', textAlign: 'center', width: '100%', cursor: 'pointer' }}
+                                    >
+                                        {uploadingVerification ? 'Uploading...' : 'Upload Document'}
+                                    </label>
+                                </div>
+                            )}
+
+                            {profile.verification_status === 'rejected' && (
+                                <p style={{ color: '#dc2626', fontSize: '0.85rem', marginTop: '10px' }}>
+                                    Your previous document was rejected. Please upload a clear, valid identity document.
+                                </p>
+                            )}
+
+                            {(profile.verification_status === 'pending' || profile.verification_status === 'verified') && profile.verification_document_url && (
+                                <div style={{ marginTop: '10px' }}>
+                                    <a href={profile.verification_document_url} target="_blank" rel="noopener noreferrer" style={{ color: '#4f46e5', fontSize: '0.9rem', textDecoration: 'none' }}>
+                                        📄 View Uploaded Document
+                                    </a>
+                                </div>
+                            )}
                         </div>
                     </div>
 

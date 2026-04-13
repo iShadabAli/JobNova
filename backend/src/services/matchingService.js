@@ -29,14 +29,11 @@ const matchJobs = async (userProfile, jobType, searchWords = []) => {
             `title.ilike.%${word}%,location.ilike.%${word}%,description.ilike.%${word}%,skills.ilike.%${word}%`
         ).join(',');
         query = query.or(orConditions);
-        console.log(`[Matching] Search mode ON. DB filter: ${orConditions}`);
     }
 
     const { data: jobs, error } = await query;
 
     if (error) throw new Error(`Error fetching jobs: ${error.message}`);
-
-    console.log(`[Matching] DB returned ${jobs.length} jobs. isSearching=${isSearching}`);
 
     // 2. If user is actively searching, SKIP strict profile matching and return all DB results.
     //    The database already filtered by keyword. No need to also require location/skill overlap.

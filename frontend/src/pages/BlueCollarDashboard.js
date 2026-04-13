@@ -249,7 +249,7 @@ const BlueCollarDashboard = ({ user, logout }) => {
                     });
                 },
                 (error) => {
-                    console.log('Location access denied or unavailable:', error);
+                    // Silently ignore location denial
                 }
             );
         }

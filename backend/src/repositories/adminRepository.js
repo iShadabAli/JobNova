@@ -109,6 +109,50 @@ const adminRepository = {
         return data || [];
     },
 
+    // ---- VERIFICATIONS ----
+    getPendingVerifications: async () => {
+        const { data, error } = await supabase
+            .from('profiles')
+            .select('user_id, full_name, verification_document_url, verification_status, updated_at')
+            .eq('verification_status', 'pending')
+            .order('updated_at', { ascending: false });
+
+        if (error) throw error;
+        
+        // Enrich with user info from custom users table
+        const enriched = await Promise.all((data || []).map(async (profile) => {
+            try {
+                const { data: userData } = await supabase
+                    .from('users')
+                    .select('phone, first_name, last_name, role')
+                    .eq('user_id', profile.user_id)
+                    .single();
+                
+                return { 
+                    ...profile, 
+                    role: userData?.role || 'unknown',
+                    users: userData || {} 
+                };
+            } catch (e) {
+                return { ...profile, role: 'unknown', users: {} };
+            }
+        }));
+
+        return enriched;
+    },
+
+    updateVerificationStatus: async (userId, status) => {
+        const { data, error } = await supabase
+            .from('profiles')
+            .update({ verification_status: status })
+            .eq('user_id', userId)
+            .select()
+            .single();
+
+        if (error) throw error;
+        return data;
+    },
+
     createSystemLog: async (action, performedBy, targetType, targetId, details) => {
         const { data, error } = await supabase
             .from('system_logs')

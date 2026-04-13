@@ -103,7 +103,6 @@ const profileRepository = {
         // 2. Get reviews received by this user
         let reviews = [];
         try {
-            console.log(`[profileRepository] Fetching reviews for user: ${userId}`);
             const { data, error } = await supabase
                 .from('reviews')
                 .select('*') // Simplify to all columns first to avoid join issues
@@ -114,7 +113,6 @@ const profileRepository = {
             if (error) {
                 console.error(`[profileRepository] Error fetching reviews:`, error);
             } else if (data) {
-                console.log(`[profileRepository] Found ${data.length} reviews.`);
                 // Separately fetch reviewer names from profiles table
                 for (let review of data) {
                     try {

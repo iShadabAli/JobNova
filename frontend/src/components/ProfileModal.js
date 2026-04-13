@@ -18,7 +18,15 @@ const ProfileModal = ({ profile, onClose, userType = 'Profile', isRtl = false })
                             {initials}
                         </div>
                         <div>
-                            <h2 style={{ margin: 0, color: '#1e293b', fontSize: '1.5rem' }}>{profile.full_name || 'Anonymous User'}</h2>
+                            <h2 style={{ margin: 0, color: '#1e293b', fontSize: '1.5rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                {profile.full_name || 'Anonymous User'}
+                                {profile.verification_status === 'verified' && (
+                                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" title="Verified User" style={{marginTop: '2px'}}>
+                                      <path d="M12 2C12 2 14.5 1 17 3C19.5 5 19 8 19 8C19 8 22 10 21 13C20 16 17 17 17 17C17 17 16 20 13 21C10 22 8 19 8 19C8 19 5 21 3 19C1 17 2 14 2 14C2 14 0 11 1 8C2 5 5 5 5 5C5 5 6 2 9 2C11.5 2 12 2 12 2Z" fill="#1d9bf0"/>
+                                      <path d="M16 9L10.5 14.5L8 12" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+                                    </svg>
+                                )}
+                            </h2>
                             <span style={{ backgroundColor: '#e0e7ff', color: '#4338ca', padding: '4px 10px', borderRadius: '12px', fontSize: '0.8rem', fontWeight: 'bold', display: 'inline-block', marginTop: '5px' }}>
                                 {userType}
                             </span>

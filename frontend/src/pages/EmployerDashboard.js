@@ -608,7 +608,7 @@ const EmployerDashboard = ({ user, logout }) => {
                                                 <td>
                                                     <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
                                                         {/* Profile / Contact actions */}
-                                                        {hiringMode === 'white' ? (
+                                                        {hiringMode === 'white' && (
                                                             <button
                                                                 className="btn btn-primary btn-sm"
                                                                 onClick={() => window.open(app.resume_url || '#', '_blank')}
@@ -616,14 +616,6 @@ const EmployerDashboard = ({ user, logout }) => {
                                                                 title={!app.resume_url ? "No CV provided" : "View CV"}
                                                             >
                                                                 {app.resume_url ? '📄 View CV' : 'No CV'}
-                                                            </button>
-                                                        ) : (
-                                                            <button
-                                                                className="btn btn-primary btn-sm"
-                                                                disabled={!app.applicant_profile?.phone}
-                                                                onClick={() => toast(`Contacting ${app.applicant_name} at ${app.applicant_profile?.phone}`)}
-                                                            >
-                                                                📞 View Contact
                                                             </button>
                                                         )}
                                                         <button

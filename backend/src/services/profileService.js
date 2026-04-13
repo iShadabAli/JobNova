@@ -93,6 +93,26 @@ const profileService = {
         return avatarUrl;
     },
 
+    uploadVerificationDocument: async (userId, file) => {
+        if (!file) throw new Error('No document provided');
+
+        const fileExt = file.originalname.split('.').pop();
+        const fileName = `${userId}-verification-${Date.now()}.${fileExt}`;
+        const filePath = `${fileName}`;
+
+        await profileRepository.uploadFileToStorage('verifications', filePath, file.buffer, file.mimetype);
+
+        const documentUrl = profileRepository.getPublicUrl('verifications', filePath);
+        const status = 'pending';
+
+        await profileRepository.update(userId, { 
+            verification_document_url: documentUrl,
+            verification_status: status
+        });
+
+        return { documentUrl, status };
+    },
+
     getHiringHistory: async (employerId) => {
         const apps = await profileRepository.getHiringHistoryApps();
 

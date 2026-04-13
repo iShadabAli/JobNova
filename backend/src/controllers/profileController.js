@@ -14,7 +14,6 @@ exports.updateProfile = async (req, res) => {
     try {
         const userId = req.user.id;
         const updates = req.body;
-        console.log(`[updateProfile] Received updates for user ${userId}:`, updates);
 
         const updatedProfile = await profileService.updateProfile(userId, updates);
 
@@ -56,6 +55,24 @@ exports.uploadAvatar = async (req, res) => {
         });
     } catch (error) {
         console.error("Upload Avatar error:", error);
+        res.status(500).json({ error: error.message });
+    }
+};
+
+exports.uploadVerificationDocument = async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const file = req.file;
+
+        const { documentUrl, status } = await profileService.uploadVerificationDocument(userId, file);
+
+        res.status(200).json({
+            message: 'Verification document uploaded successfully',
+            verification_document_url: documentUrl,
+            verification_status: status
+        });
+    } catch (error) {
+        console.error("Upload verification document error:", error);
         res.status(500).json({ error: error.message });
     }
 };
