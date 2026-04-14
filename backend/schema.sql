@@ -139,9 +139,9 @@ CREATE TABLE public.applications (
 
 DROP TABLE IF EXISTS public.reviews;
 
-CREATE TABLE public.reviews (
+CREATE TABLE IF NOT EXISTS public.reviews (
   id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
-  job_id uuid REFERENCES public.jobs(id) ON DELETE CASCADE,
+  job_id uuid REFERENCES public.jobs(id) ON DELETE SET NULL,
   reviewer_id uuid REFERENCES public.users(id) ON DELETE CASCADE,
   reviewee_id uuid REFERENCES public.users(id) ON DELETE CASCADE,
   rating integer CHECK (rating >= 1 AND rating <= 5) NOT NULL,

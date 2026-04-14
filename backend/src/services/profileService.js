@@ -1,5 +1,4 @@
 const profileRepository = require('../repositories/profileRepository');
-const { supabaseAdmin: supabase } = require('../config/supabase');
 const resumeParserService = require('./resumeParserService');
 
 const profileService = {

@@ -35,7 +35,6 @@ export const AuthProvider = ({ children }) => {
         loadUser();
     }, [token, API_URL]);
 
-    // No logs needed here
     // Login: identifier (email or phone) + password
     const login = async (identifier, password) => {
         try {

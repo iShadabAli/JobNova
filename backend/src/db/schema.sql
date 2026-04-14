@@ -37,7 +37,7 @@ CREATE TABLE IF NOT EXISTS profiles (
 -- Reviews Table
 CREATE TABLE IF NOT EXISTS reviews (
     id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-    job_id UUID REFERENCES jobs(id) ON DELETE CASCADE,
+    job_id UUID REFERENCES jobs(id) ON DELETE SET NULL,
     reviewer_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
     reviewee_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
     rating INTEGER CHECK (rating >= 1 AND rating <= 5),

@@ -256,9 +256,10 @@ const BlueCollarDashboard = ({ user, logout }) => {
     }, []);
 
     // Fetch Jobs (Depends on Location & Radius)
-    const fetchJobs = useCallback(async () => {
+    const fetchJobs = useCallback(async (overrideSearchTerm) => {
+        const termToUse = typeof overrideSearchTerm === 'string' ? overrideSearchTerm : searchTerm;
         setLoadingJobs(true);
-        setIsSearchingAI(!!searchTerm); // Show AI processing state if there's a search term
+        setIsSearchingAI(!!termToUse); // Show AI processing state if there's a search term
         try {
             const token = sessionStorage.getItem('token');
 
@@ -267,8 +268,8 @@ const BlueCollarDashboard = ({ user, logout }) => {
                 url = `http://localhost:5000/api/jobs/nearby?lat=${userLocation.lat}&lng=${userLocation.lng}&radius=${radius}`;
             }
 
-            if (searchTerm && searchTerm.trim() !== '') {
-                url += url.includes('?') ? `&search=${encodeURIComponent(searchTerm)}` : `?search=${encodeURIComponent(searchTerm)}`;
+            if (termToUse && termToUse.trim() !== '') {
+                url += url.includes('?') ? `&search=${encodeURIComponent(termToUse)}` : `?search=${encodeURIComponent(termToUse)}`;
             }
 
             const response = await fetch(url, {
@@ -505,6 +506,9 @@ const BlueCollarDashboard = ({ user, logout }) => {
 
         // Apply the search text
         setSearchTerm(parsed.searchText);
+        
+        // INSTANTLY FIRE OFF THE SEARCH
+        fetchJobs(parsed.searchText);
 
         // Apply duration filter if detected
         if (parsed.durationFilter) {
@@ -513,7 +517,7 @@ const BlueCollarDashboard = ({ user, logout }) => {
 
         // Ensure we're on the find-jobs tab to show results
         setActiveTab('find-jobs');
-    }, []);
+    }, [fetchJobs]);
 
     return (
         <div className="wc-dashboard-container" dir={language === 'ur' ? 'rtl' : 'ltr'}>

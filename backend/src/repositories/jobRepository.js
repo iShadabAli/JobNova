@@ -26,8 +26,10 @@ const jobRepository = {
         if (type) query = query.eq('type', type);
 
         if (searchWords && searchWords.length > 0) {
-            // Apply a massive OR clause for each translated word on the title and description
-            const orConditions = searchWords.map(word => `title.ilike.%${word}%`).join(',');
+            // Apply a massive OR clause for each translated word on the title, location, description, and skills
+            const orConditions = searchWords.map(word => 
+                `title.ilike.%${word}%,location.ilike.%${word}%,description.ilike.%${word}%,skills.ilike.%${word}%`
+            ).join(',');
             query = query.or(orConditions);
         }
 

@@ -324,7 +324,7 @@ const EmployerDashboard = ({ user, logout }) => {
                     </div>
 
                     {/* Stats Row */}
-                    <div className="emp-stats-grid">
+                    <div id="overview" className="emp-stats-grid">
                         <div className="emp-stat-card">
                             <h3>{hiringMode === 'white' ? 'Active Jobs' : 'Active Tasks'}</h3>
                             <p className="stat-number">{filteredJobs.filter(j => j.status === 'Active').length}</p>
@@ -345,7 +345,7 @@ const EmployerDashboard = ({ user, logout }) => {
                     </div>
 
                     {/* Job Table */}
-                    <div className="emp-table-container">
+                    <div id="jobs" className="emp-table-container" style={{ scrollMarginTop: '80px' }}>
                         <table className="emp-job-table">
                             <thead>
                                 <tr>
