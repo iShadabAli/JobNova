@@ -4,7 +4,7 @@ import '../index.css';
 
 const VoiceProfileAssistant = ({ profile, onUpdateProfile, onComplete }) => {
     const [isActive, setIsActive] = useState(false);
-    const [currentStep, setCurrentStep] = useState(0);
+    const [, setCurrentStep] = useState(0);
     const [transcript, setTranscript] = useState('');
     const [isListening, setIsListening] = useState(false);
     const [assistantText, setAssistantText] = useState('Click start to begin voice setup.');

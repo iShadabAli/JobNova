@@ -110,8 +110,7 @@ const EmployerDashboard = ({ user, logout }) => {
 
     const [selectedJob, setSelectedJob] = useState(null);
 
-    const handleDeleteJob = async (jobId) => {
-        if (!window.confirm('Are you sure you want to delete this job?')) return;
+    const executeDeleteJob = async (jobId) => {
         try {
             const token = sessionStorage.getItem('token');
             const response = await fetch(`http://localhost:5000/api/jobs/${jobId}`, {
@@ -130,6 +129,32 @@ const EmployerDashboard = ({ user, logout }) => {
             console.error('Error deleting job:', error);
             toast.error('Error deleting job');
         }
+    };
+
+    const handleDeleteJob = (jobId) => {
+        toast((t) => (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', alignItems: 'center' }}>
+                <span style={{ fontWeight: '500' }}>Are you sure you want to delete this job?</span>
+                <div style={{ display: 'flex', gap: '10px' }}>
+                    <button 
+                        className="btn btn-danger btn-sm" 
+                        style={{ backgroundColor: '#ef4444', color: 'white', border: 'none' }}
+                        onClick={() => {
+                            toast.dismiss(t.id);
+                            executeDeleteJob(jobId);
+                        }}
+                    >
+                        Delete
+                    </button>
+                    <button 
+                        className="btn btn-secondary btn-sm" 
+                        onClick={() => toast.dismiss(t.id)}
+                    >
+                        Cancel
+                    </button>
+                </div>
+            </div>
+        ), { duration: Infinity, id: `delete-toast-${jobId}` });
     };
 
     const [applicants, setApplicants] = useState([]);
