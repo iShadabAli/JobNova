@@ -48,6 +48,13 @@ const adminRepository = {
     },
 
     deleteJob: async (jobId) => {
+        // Reject all non-completed applications before hard-deleting the job
+        await supabase
+            .from('applications')
+            .update({ status: 'Rejected' })
+            .eq('job_id', jobId)
+            .not('status', 'in', '("Completed","In Progress")');
+
         const { error } = await supabase
             .from('jobs')
             .delete()

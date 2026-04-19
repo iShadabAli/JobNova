@@ -240,7 +240,15 @@ const WhiteCollarDashboard = ({ user, logout }) => {
                 });
                 if (response.ok) {
                     const data = await response.json();
-                    setMyApps(data);
+                    
+                    // Filter out Rejected apps and apps tied to Deleted jobs (unless completed)
+                    const filteredApps = data.filter(app => {
+                        if (app.status === 'Rejected') return false;
+                        if ((!app.jobs || app.jobs.status === 'Deleted') && app.status !== 'Completed') return false;
+                        return true;
+                    });
+                    
+                    setMyApps(filteredApps);
                 }
             } catch (error) {
                 console.error('Failed to fetch applications:', error);

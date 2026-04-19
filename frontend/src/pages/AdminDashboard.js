@@ -12,6 +12,7 @@ const AdminDashboard = ({ user, logout }) => {
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [actionLoading, setActionLoading] = useState(null);
+    const [confirmModal, setConfirmModal] = useState({ show: false, jobId: null, jobTitle: '' });
 
     const API_URL = process.env.REACT_APP_API_URL;
 
@@ -156,7 +157,7 @@ const AdminDashboard = ({ user, logout }) => {
     };
 
     const handleDeleteJob = async (jobId) => {
-        if (!window.confirm('Are you sure you want to delete this job? This action cannot be undone.')) return;
+        setConfirmModal({ show: false, jobId: null, jobTitle: '' });
         setActionLoading(jobId);
         try {
             const res = await fetch(`${API_URL}/admin/jobs/${jobId}`, {
@@ -519,7 +520,7 @@ const AdminDashboard = ({ user, logout }) => {
                                             </td>
                                             <td style={{ padding: '12px 16px' }}>
                                                 <button
-                                                    onClick={() => handleDeleteJob(j.id)}
+                                                    onClick={() => setConfirmModal({ show: true, jobId: j.id, jobTitle: j.title })}
                                                     disabled={actionLoading === j.id}
                                                     style={{
                                                         padding: '6px 14px', border: 'none', borderRadius: '6px',
@@ -784,6 +785,105 @@ const AdminDashboard = ({ user, logout }) => {
                     </div>
                 )}
             </div>
+
+            {/* Delete Confirmation Modal */}
+            {confirmModal.show && (
+                <div
+                    onClick={() => setConfirmModal({ show: false, jobId: null, jobTitle: '' })}
+                    style={{
+                        position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+                        background: 'rgba(0, 0, 0, 0.7)', backdropFilter: 'blur(4px)',
+                        display: 'flex', justifyContent: 'center', alignItems: 'center',
+                        zIndex: 100, animation: 'fadeIn 0.2s ease'
+                    }}
+                >
+                    <div
+                        onClick={e => e.stopPropagation()}
+                        style={{
+                            background: '#1e293b', borderRadius: '16px', padding: '32px',
+                            maxWidth: '420px', width: '90%', border: '1px solid #334155',
+                            boxShadow: '0 25px 50px rgba(0, 0, 0, 0.5)',
+                            animation: 'slideUp 0.25s ease'
+                        }}
+                    >
+                        {/* Warning Icon */}
+                        <div style={{ textAlign: 'center', marginBottom: '20px' }}>
+                            <div style={{
+                                width: '64px', height: '64px', borderRadius: '50%',
+                                background: 'rgba(239, 68, 68, 0.15)', display: 'flex',
+                                alignItems: 'center', justifyContent: 'center',
+                                margin: '0 auto', border: '2px solid rgba(239, 68, 68, 0.3)'
+                            }}>
+                                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path>
+                                    <line x1="12" y1="9" x2="12" y2="13"></line>
+                                    <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                                </svg>
+                            </div>
+                        </div>
+
+                        {/* Title & Description */}
+                        <h3 style={{ margin: '0 0 8px', textAlign: 'center', color: '#f8fafc', fontSize: '1.25rem', fontWeight: '700' }}>
+                            Delete Job Posting?
+                        </h3>
+                        <p style={{ margin: '0 0 8px', textAlign: 'center', color: '#94a3b8', fontSize: '0.9rem', lineHeight: '1.5' }}>
+                            You are about to permanently delete:
+                        </p>
+                        <p style={{
+                            margin: '0 0 20px', textAlign: 'center', color: '#f8fafc',
+                            fontSize: '1rem', fontWeight: '600',
+                            padding: '8px 16px', background: '#0f172a', borderRadius: '8px',
+                            border: '1px solid #334155'
+                        }}>
+                            "{confirmModal.jobTitle}"
+                        </p>
+                        <p style={{ margin: '0 0 24px', textAlign: 'center', color: '#f87171', fontSize: '0.8rem' }}>
+                            ⚠️ This action cannot be undone. All pending applications will also be rejected.
+                        </p>
+
+                        {/* Action Buttons */}
+                        <div style={{ display: 'flex', gap: '12px' }}>
+                            <button
+                                onClick={() => setConfirmModal({ show: false, jobId: null, jobTitle: '' })}
+                                style={{
+                                    flex: 1, padding: '12px', background: '#334155', color: '#e2e8f0',
+                                    border: 'none', borderRadius: '10px', fontSize: '0.9rem',
+                                    fontWeight: '600', cursor: 'pointer', transition: 'background 0.2s'
+                                }}
+                                onMouseOver={e => e.target.style.background = '#475569'}
+                                onMouseOut={e => e.target.style.background = '#334155'}
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={() => handleDeleteJob(confirmModal.jobId)}
+                                style={{
+                                    flex: 1, padding: '12px', background: '#dc2626', color: 'white',
+                                    border: 'none', borderRadius: '10px', fontSize: '0.9rem',
+                                    fontWeight: '600', cursor: 'pointer', transition: 'background 0.2s',
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px'
+                                }}
+                                onMouseOver={e => e.target.style.background = '#b91c1c'}
+                                onMouseOut={e => e.target.style.background = '#dc2626'}
+                            >
+                                🗑 Delete Job
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Modal Animations */}
+            <style>{`
+                @keyframes fadeIn {
+                    from { opacity: 0; }
+                    to { opacity: 1; }
+                }
+                @keyframes slideUp {
+                    from { opacity: 0; transform: translateY(20px) scale(0.95); }
+                    to { opacity: 1; transform: translateY(0) scale(1); }
+                }
+            `}</style>
         </div>
     );
 };

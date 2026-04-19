@@ -657,33 +657,75 @@ const Profile = ({ user, logout }) => {
                 {user?.role === 'employer' && (
                     <div className="profile-grid" style={{ marginTop: '20px' }}>
                         <div className="profile-card" style={{ flex: 1 }}>
-                            <h3>Hiring History</h3>
+                            <h3 style={{ borderBottom: '1px solid #e2e8f0', paddingBottom: '12px', marginBottom: '20px' }}>
+                                📋 Hiring History
+                            </h3>
                             {hiringHistory.length > 0 ? (
-                                <div className="table-responsive">
-                                    <table className="table">
-                                        <thead>
-                                            <tr>
-                                                <th>Job Title</th>
-                                                <th>Worker Hired</th>
-                                                <th>Date Completed</th>
-                                                <th>Status</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {hiringHistory.map(app => (
-                                                <tr key={app.id}>
-                                                    <td>{app.jobs?.title || 'Unknown Job'}</td>
-                                                    <td>{app.worker_name}</td>
-                                                    <td>{new Date(app.created_at).toLocaleDateString()}</td>
-                                                    <td><span className="badge badge-success">Completed</span></td>
-                                                </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                                    {hiringHistory.map(app => (
+                                        <div key={app.id} style={{
+                                            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                                            padding: '16px 20px', background: '#f8fafc', border: '1px solid #e2e8f0', 
+                                            borderRadius: '12px', transition: 'all 0.2s',
+                                            boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
+                                        }}
+                                        onMouseOver={e => e.currentTarget.style.transform = 'translateY(-2px)'}
+                                        onMouseOut={e => e.currentTarget.style.transform = 'translateY(0)'}
+                                        >
+                                            <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
+                                                <div style={{
+                                                    width: '50px', height: '50px', borderRadius: '12px', 
+                                                    background: 'linear-gradient(135deg, #4f46e5 0%, #3b82f6 100%)', 
+                                                    color: 'white', display: 'flex', 
+                                                    alignItems: 'center', justifyContent: 'center', 
+                                                    fontSize: '1.25rem', fontWeight: 'bold',
+                                                    boxShadow: '0 4px 6px rgba(79, 70, 229, 0.2)'
+                                                }}>
+                                                    {app.jobs?.title ? app.jobs.title[0].toUpperCase() : '💼'}
+                                                </div>
+                                                <div>
+                                                    <h4 style={{ margin: '0 0 6px 0', color: '#1e293b', fontSize: '1.1rem', fontWeight: '600' }}>
+                                                        {app.jobs?.title || 'Unknown Job'}
+                                                    </h4>
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                        <span style={{ 
+                                                            display: 'flex', alignItems: 'center', gap: '4px',
+                                                            background: '#e2e8f0', padding: '4px 10px', 
+                                                            borderRadius: '6px', fontSize: '0.85rem', color: '#475569',
+                                                            fontWeight: '500'
+                                                        }}>
+                                                            🧑‍🔧 {app.worker_name}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '8px' }}>
+                                                <span style={{
+                                                    display: 'inline-flex', alignItems: 'center', gap: '4px',
+                                                    padding: '6px 12px', background: '#dcfce7', 
+                                                    color: '#166534', borderRadius: '20px', fontSize: '0.8rem', 
+                                                    fontWeight: '600', border: '1px solid #bbf7d0'
+                                                }}>
+                                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                                                        <polyline points="20 6 9 17 4 12"></polyline>
+                                                    </svg>
+                                                    Completed
+                                                </span>
+                                                <span style={{ color: '#64748b', fontSize: '0.85rem', fontWeight: '500' }}>
+                                                    📅 {new Date(app.created_at).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    ))}
                                 </div>
                             ) : (
-                                <div className="empty-state text-center" style={{ padding: '20px', color: '#666' }}>
-                                    <p>No completed hires yet. When you complete a job with a worker, it will appear here.</p>
+                                <div style={{ 
+                                    padding: '40px 20px', textAlign: 'center', color: '#64748b',
+                                    background: '#f8fafc', borderRadius: '12px', border: '2px dashed #e2e8f0'
+                                }}>
+                                    <div style={{ fontSize: '2.5rem', marginBottom: '12px' }}>📭</div>
+                                    <h4 style={{ margin: '0 0 8px 0', color: '#334155' }}>No Completed Hires Yet</h4>
+                                    <p style={{ margin: 0, fontSize: '0.95rem' }}>When you complete a job with a worker, it will appear here.</p>
                                 </div>
                             )}
                         </div>

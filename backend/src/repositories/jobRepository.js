@@ -12,12 +12,24 @@ const jobRepository = {
     },
 
     deleteJob: async (jobId) => {
+        // 1. Soft-delete the job
         const { error } = await supabase
             .from('jobs')
-            .delete()
+            .update({ status: 'Deleted' })
             .eq('id', jobId);
 
         if (error) throw error;
+
+        // 2. Reject all non-completed applications for this job
+        //    so they don't linger as "Pending" on workers' dashboards
+        const { error: appError } = await supabase
+            .from('applications')
+            .update({ status: 'Rejected' })
+            .eq('job_id', jobId)
+            .not('status', 'in', '("Completed","In Progress")');
+
+        if (appError) console.error('Error rejecting applications on job delete:', appError);
+
         return true;
     },
 
@@ -85,6 +97,7 @@ const jobRepository = {
             .from('jobs')
             .select('*, applications(count)')
             .eq('employer_id', employerId)
+            .neq('status', 'Deleted')
             .order('created_at', { ascending: false });
 
         if (error) throw error;
@@ -208,7 +221,25 @@ const jobRepository = {
             .order('created_at', { ascending: false });
 
         if (error) throw error;
-        return data;
+
+        // Filter out irrelevant applications securely on the backend
+        const filteredData = data.filter(app => {
+            // Hide explicitly rejected applications
+            if (app.status === 'Rejected') return false;
+            
+            // Handle one-to-one or one-to-many parsing behavior of Supabase
+            const jobStatus = Array.isArray(app.jobs) ? app.jobs[0]?.status : app.jobs?.status;
+            
+            // If job doesn't exist (hard deleted previously) OR job is soft-deleted
+            // Hide it UNLESS the worker successfully completed it.
+            if ((!app.jobs || jobStatus === 'Deleted') && app.status !== 'Completed') {
+                return false;
+            }
+
+            return true;
+        });
+
+        return filteredData;
     }
 };
 

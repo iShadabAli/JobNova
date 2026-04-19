@@ -150,6 +150,7 @@ const profileRepository = {
                 .from('jobs')
                 .select('id, title, type, status, created_at')
                 .eq('employer_id', userId)
+                .neq('status', 'Deleted')
                 .order('created_at', { ascending: false })
                 .limit(5);
             if (!error && data) jobsPosted = data;
@@ -157,20 +158,7 @@ const profileRepository = {
             console.error('Jobs posted fetch error:', e);
         }
 
-        // 4. Get completed jobs count
-        let completedJobsCount = 0;
-        try {
-            const { count } = await supabase
-                .from('applications')
-                .select('id', { count: 'exact', head: true })
-                .eq('applicant_id', userId)
-                .eq('status', 'Completed');
-            completedJobsCount = count || 0;
-        } catch (e) {
-            console.error('Completed jobs count error:', e);
-        }
-
-        // 5. Get user info from users table
+        // 4. Get user info from users table
         let userData = {};
         try {
             const { data } = await supabase
@@ -181,6 +169,28 @@ const profileRepository = {
             if (data) userData = data;
         } catch (e) {
             console.error('User data fetch error:', e);
+        }
+
+        // 5. Get completed jobs count
+        let completedJobsCount = 0;
+        try {
+            if (userData.role === 'employer') {
+                const { count } = await supabase
+                    .from('applications')
+                    .select('id, jobs!inner(employer_id)', { count: 'exact', head: true })
+                    .eq('jobs.employer_id', userId)
+                    .eq('status', 'Completed');
+                completedJobsCount = count || 0;
+            } else {
+                const { count } = await supabase
+                    .from('applications')
+                    .select('id', { count: 'exact', head: true })
+                    .eq('applicant_id', userId)
+                    .eq('status', 'Completed');
+                completedJobsCount = count || 0;
+            }
+        } catch (e) {
+            console.error('Completed jobs count error:', e);
         }
 
         return {

@@ -217,11 +217,11 @@ const PublicProfile = () => {
                 {/* ── Floating Stats Grid ── */}
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '20px', marginBottom: '32px' }}>
                     {[
-                        { value: profile?.avg_rating ? Number(profile.avg_rating).toFixed(1) : '—', label: 'Rating', color: '#7c3aed', bg: '#f3e8ff', icon: '⭐' },
-                        { value: profile?.total_reviews || 0, label: 'Reviews', color: '#059669', bg: '#dcfce7', icon: '💬' },
-                        { value: (jobs_posted || []).length, label: 'Jobs Posted', color: '#d97706', bg: '#fef3c7', icon: '📋' },
-                        { value: completed_jobs_count || 0, label: 'Completed', color: '#e11d48', bg: '#ffe4e6', icon: '✅' },
-                    ].map((stat, i) => (
+                        { value: profile?.avg_rating ? Number(profile.avg_rating).toFixed(1) : '—', label: 'Rating', color: '#7c3aed', bg: '#f3e8ff', icon: '⭐', show: true },
+                        { value: profile?.total_reviews || 0, label: 'Reviews', color: '#059669', bg: '#dcfce7', icon: '💬', show: true },
+                        { value: (jobs_posted || []).length, label: 'Jobs Posted', color: '#d97706', bg: '#fef3c7', icon: '📋', show: user_info?.role === 'employer' },
+                        { value: completed_jobs_count || 0, label: 'Completed', color: '#e11d48', bg: '#ffe4e6', icon: '✅', show: user_info?.role === 'employer' || user_info?.role === 'blue_collar' },
+                    ].filter(stat => stat.show).map((stat, i) => (
                         <div key={i} style={{
                             background: 'white', borderRadius: '24px', padding: '24px 20px', textAlign: 'center',
                             boxShadow: '0 10px 30px rgba(0,0,0,0.03)', border: '1px solid rgba(255,255,255,0.8)',
@@ -379,7 +379,7 @@ const PublicProfile = () => {
                 </div>
 
                 {/* ── Jobs Posted Section (for Employers) ── */}
-                {jobs_posted && jobs_posted.length > 0 && (
+                {user_info?.role === 'employer' && jobs_posted && jobs_posted.length > 0 && (
                     <div style={{ background: 'white', borderRadius: '24px', padding: '32px', boxShadow: '0 10px 30px rgba(0,0,0,0.03)' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '24px' }}>
                             <div style={{ width: '44px', height: '44px', background: 'linear-gradient(135deg, #dcfce7, #bbf7d0)', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
