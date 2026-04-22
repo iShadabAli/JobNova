@@ -11,6 +11,8 @@ import EmployerDashboard from './pages/EmployerDashboard';
 import AdminDashboard from './pages/AdminDashboard';
 import Profile from './pages/Profile';
 import PublicProfile from './pages/PublicProfile';
+import Home from './pages/Home';
+import { LanguageProvider } from './context/LanguageContext';
 import './App.css';
 
 // Profile Wrapper to pass auth props
@@ -52,10 +54,11 @@ const Dashboard = () => {
 function App() {
     return (
         <AuthProvider>
-            <Router>
-                <div className="app">
-                    <Toaster position="top-center" />
-                    <Routes>
+            <LanguageProvider>
+                <Router>
+                    <div className="app">
+                        <Toaster position="top-center" />
+                        <Routes>
                         <Route path="/login" element={<Login />} />
                         <Route path="/register" element={<Register />} />
 
@@ -77,10 +80,11 @@ function App() {
                             </ProtectedRoute>
                         } />
 
-                        <Route path="/" element={<Navigate to="/login" replace />} />
+                        <Route path="/" element={<Home />} />
                     </Routes>
                 </div>
             </Router>
+            </LanguageProvider>
         </AuthProvider>
     );
 }
