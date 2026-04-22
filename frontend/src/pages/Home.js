@@ -22,15 +22,6 @@ const Home = () => {
                 </div>
                 <div className="nav-actions">
                     <LanguageToggle />
-                    {user ? (
-                        <button className="btn-primary" onClick={() => navigate('/dashboard')}>
-                            {t('goToDashboard')}
-                        </button>
-                    ) : (
-                        <button className="btn-primary" onClick={() => navigate('/login')}>
-                            Login
-                        </button>
-                    )}
                 </div>
             </nav>
 
@@ -40,16 +31,14 @@ const Home = () => {
                     <h1 className="hero-title">{t('heroTitle')}</h1>
                     <p className="hero-subtitle">{t('heroSubtitle')}</p>
                     
-                    {!user && (
-                        <div className="hero-buttons">
-                            <button className="btn-primary large" onClick={() => navigate('/login')}>
-                                {t('findJobs')}
-                            </button>
-                            <button className="btn-outline large" onClick={() => navigate('/login')}>
-                                {t('hireWorkers')}
-                            </button>
-                        </div>
-                    )}
+                    <div className="hero-buttons">
+                        <button className="btn-primary large" onClick={() => navigate('/login')}>
+                            {t('findJobs')}
+                        </button>
+                        <button className="btn-outline large" onClick={() => navigate('/login')}>
+                            {t('hireWorkers')}
+                        </button>
+                    </div>
                 </div>
             </header>
 
