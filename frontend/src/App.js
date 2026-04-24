@@ -12,6 +12,8 @@ import AdminDashboard from './pages/AdminDashboard';
 import Profile from './pages/Profile';
 import PublicProfile from './pages/PublicProfile';
 import Home from './pages/Home';
+import About from './pages/About';
+import Contact from './pages/Contact';
 import { LanguageProvider } from './context/LanguageContext';
 import './App.css';
 
@@ -80,6 +82,8 @@ function App() {
                             </ProtectedRoute>
                         } />
 
+                        <Route path="/about" element={<About />} />
+                        <Route path="/contact" element={<Contact />} />
                         <Route path="/" element={<Home />} />
                     </Routes>
                 </div>

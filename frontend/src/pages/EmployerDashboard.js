@@ -1,6 +1,6 @@
 import toast from 'react-hot-toast';
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import '../index.css';
 import StarRating from '../components/StarRating';
 import JobMap from '../components/JobMap';
@@ -9,10 +9,28 @@ import ComplaintModal from '../components/ComplaintModal';
 import ChatWidget from '../components/ChatWidget';
 
 const EmployerDashboard = ({ user, logout }) => {
+    const [activeView, _setActiveView] = useState(() => {
+        const lastUser = sessionStorage.getItem('employer_lastUser');
+        if (lastUser !== user?.id) { sessionStorage.setItem('employer_activeView', 'welcome'); sessionStorage.setItem('employer_lastUser', user?.id); return 'welcome'; }
+        return sessionStorage.getItem('employer_activeView') || 'welcome';
+    });
+    const setActiveView = (v) => { sessionStorage.setItem('employer_activeView', v); _setActiveView(v); window.history.pushState({ view: v }, ''); };
+
+    useEffect(() => {
+        const onBack = (e) => {
+            const prev = e.state?.view;
+            if (prev) { sessionStorage.setItem('employer_activeView', prev); _setActiveView(prev); }
+            else { sessionStorage.setItem('employer_activeView', 'welcome'); _setActiveView('welcome'); }
+        };
+        window.history.replaceState({ view: activeView }, '');
+        window.addEventListener('popstate', onBack);
+        return () => window.removeEventListener('popstate', onBack);
+    }, []); // eslint-disable-line react-hooks/exhaustive-deps
     const [hiringMode, setHiringMode] = useState('white'); // 'white' or 'blue'
     const [showPostJob, setShowPostJob] = useState(false);
     const [jobs, setJobs] = useState([]);
     const [profileName, setProfileName] = useState('');
+    const [profileAvatar, setProfileAvatar] = useState('');
 
     const [newJob, setNewJob] = useState({
         title: '',
@@ -25,6 +43,136 @@ const EmployerDashboard = ({ user, logout }) => {
     });
 
     const [showComplaintModal, setShowComplaintModal] = useState(false);
+
+    // International Jobs State
+    const [intlJob, setIntlJob] = useState({
+        title: '', description: '', country: '', city: '',
+        salary: '', currency: 'USD', visa_sponsored: false,
+        type: 'white', requirements: '', benefits: ''
+    });
+    const [submittingIntl, setSubmittingIntl] = useState(false);
+
+    // Employer's International Jobs List + Applicant Management
+    const [myIntlJobs, setMyIntlJobs] = useState([]);
+    const [loadingMyIntlJobs, setLoadingMyIntlJobs] = useState(false);
+    const [selectedIntlJob, setSelectedIntlJob] = useState(null);
+    const [intlApplicants, setIntlApplicants] = useState([]);
+    const [loadingIntlApps, setLoadingIntlApps] = useState(false);
+
+
+
+    // Delete an international job
+    const handleDeleteIntlJob = async (jobId) => {
+        toast((t) => (
+            <div>
+                <p style={{ fontWeight: 600 }}>Delete this international job?</p>
+                <p style={{ fontSize: '0.85rem', color: '#64748b' }}>This will also remove all applications.</p>
+                <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
+                    <button className="btn btn-primary" style={{ background: '#ef4444', padding: '6px 16px', fontSize: '0.85rem' }}
+                        onClick={async () => {
+                            toast.dismiss(t.id);
+                            try {
+                                const response = await fetch(`http://localhost:5000/api/international-jobs/${jobId}`, { method: 'DELETE' });
+                                const result = await response.json();
+                                if (result.success) {
+                                    setMyIntlJobs(myIntlJobs.filter(j => j.id !== jobId));
+                                    toast.success('Job deleted successfully');
+                                } else {
+                                    toast.error(result.error || 'Failed to delete');
+                                }
+                            } catch (error) {
+                                toast.error('Network error');
+                            }
+                        }}
+                    >Delete</button>
+                    <button className="btn btn-secondary" style={{ padding: '6px 16px', fontSize: '0.85rem' }} onClick={() => toast.dismiss(t.id)}>Cancel</button>
+                </div>
+            </div>
+        ), { duration: Infinity, id: `delete-intl-${jobId}` });
+    };
+
+    // Fetch employer's own international jobs
+    const fetchMyIntlJobs = async () => {
+        setLoadingMyIntlJobs(true);
+        try {
+            const response = await fetch(`http://localhost:5000/api/international-jobs/employer/${user.id}`);
+            const result = await response.json();
+            if (result.success) setMyIntlJobs(result.data);
+        } catch (error) {
+            console.error('Error fetching my international jobs:', error);
+        } finally {
+            setLoadingMyIntlJobs(false);
+        }
+    };
+
+    // Auto-fetch when page reloads on this view
+    useEffect(() => {
+        if (activeView === 'my-international-jobs') fetchMyIntlJobs();
+    }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+    // Open applicants modal for an international job
+    const handleManageIntlJob = async (job) => {
+        setSelectedIntlJob(job);
+        setLoadingIntlApps(true);
+        try {
+            const response = await fetch(`http://localhost:5000/api/international-jobs/${job.id}/applications`);
+            const result = await response.json();
+            if (result.success) setIntlApplicants(result.data);
+        } catch (error) {
+            console.error('Error fetching intl applicants:', error);
+        } finally {
+            setLoadingIntlApps(false);
+        }
+    };
+
+    // Update status of an international job application
+    const handleIntlStatusUpdate = async (appId, newStatus) => {
+        try {
+            const response = await fetch(`http://localhost:5000/api/international-jobs/applications/${appId}/status`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ status: newStatus })
+            });
+            const result = await response.json();
+            if (result.success) {
+                setIntlApplicants(intlApplicants.map(app =>
+                    app.id === appId ? { ...app, status: newStatus } : app
+                ));
+                toast.success(`Application ${newStatus}`);
+            }
+        } catch (error) {
+            console.error('Error updating intl application:', error);
+            toast.error('Failed to update status');
+        }
+    };
+
+    const handlePostIntlJob = async (e) => {
+        e.preventDefault();
+        setSubmittingIntl(true);
+        try {
+            const response = await fetch('http://localhost:5000/api/international-jobs', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ ...intlJob, employer_id: user.id })
+            });
+            const result = await response.json();
+            if (result.success) {
+                toast.success('International job posted successfully!');
+                setIntlJob({ title: '', description: '', country: '', city: '', salary: '', currency: 'USD', visa_sponsored: false, type: 'white', requirements: '', benefits: '' });
+                setActiveView('welcome');
+            } else {
+                toast.error(result.error || 'Failed to post job');
+            }
+        } catch (error) {
+            console.error('Error posting international job:', error);
+            toast.error('Network error. Please try again.');
+        } finally {
+            setSubmittingIntl(false);
+        }
+    };
+
+    const COUNTRIES = ['United Arab Emirates', 'Saudi Arabia', 'Qatar', 'Kuwait', 'Bahrain', 'Oman', 'Canada', 'United Kingdom', 'Germany', 'Australia', 'Malaysia', 'Turkey', 'China', 'Japan', 'South Korea', 'United States', 'Other'];
+    const CURRENCIES = ['USD', 'AED', 'SAR', 'QAR', 'KWD', 'BHD', 'OMR', 'CAD', 'GBP', 'EUR', 'AUD', 'MYR', 'TRY', 'CNY', 'JPY', 'KRW', 'PKR'];
 
     // Fetch Jobs from API
     useEffect(() => {
@@ -53,6 +201,9 @@ const EmployerDashboard = ({ user, logout }) => {
                     const data = await res.json();
                     if (data.full_name) {
                         setProfileName(data.full_name);
+                    }
+                    if (data.avatar_url) {
+                        setProfileAvatar(data.avatar_url);
                     }
                 }
             } catch (error) {
@@ -280,15 +431,48 @@ const EmployerDashboard = ({ user, logout }) => {
         <div className="wc-dashboard-container">
             {/* Navbar */}
             <nav className="wc-navbar">
-                <div className="wc-nav-brand" style={{ color: '#4f46e5' }}>JobNova Recruiter</div>
-                <div className="wc-nav-links">
-                    <a href="#overview" className="active">Overview</a>
-                    <a href="#jobs">My Jobs</a>
-                    <a href="/profile">My Profile</a>
+                <div 
+                    className="wc-nav-brand" 
+                    style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', color: '#4f46e5' }}
+                    onClick={() => setActiveView('welcome')}
+                    title="Back to Dashboard"
+                >
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+                    JobNova Recruiter
                 </div>
                 <div className="wc-user-menu" style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+                    <div style={{ display: 'flex', gap: '5px', marginRight: '5px' }}>
+                        <Link to="/about" className="wc-nav-link" style={{ fontSize: '0.75rem', padding: '0.2rem 0.5rem' }}>About Us</Link>
+                        <Link to="/contact" className="wc-nav-link" style={{ fontSize: '0.75rem', padding: '0.2rem 0.5rem' }}>Contact Us</Link>
+                    </div>
                     <NotificationBell language="en" />
-                    <span className="wc-user-greeting">{getDisplayName()}</span>
+                    <span className="wc-user-greeting" style={{ marginRight: '5px' }}>{getDisplayName()}</span>
+                    <div 
+                        onClick={() => navigate('/profile')}
+                        style={{
+                            width: '36px',
+                            height: '36px',
+                            borderRadius: '50%',
+                            backgroundColor: '#4f46e5',
+                            color: 'white',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            fontWeight: 'bold',
+                            fontSize: '1rem',
+                            cursor: 'pointer',
+                            overflow: 'hidden',
+                            border: '2px solid white',
+                            boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                        }}
+                        title="My Profile"
+                    >
+                        {profileAvatar ? (
+                            <img src={profileAvatar} alt="Profile" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        ) : (
+                            getDisplayName() ? getDisplayName().charAt(0).toUpperCase() : 'U'
+                        )}
+                    </div>
                     <button onClick={logout} className="btn btn-outline-light btn-sm">Logout</button>
                     <button
                         onClick={() => setShowComplaintModal(true)}
@@ -315,6 +499,318 @@ const EmployerDashboard = ({ user, logout }) => {
             </nav>
 
             <main className="wc-main-content">
+
+                {/* -------------------- WELCOME VIEW -------------------- */}
+                {activeView === 'welcome' && (
+                    <section className="wc-welcome-section">
+                        <div className="wc-welcome-hero">
+                            <h1>Welcome back, {getDisplayName()}! 👋</h1>
+                            <p>What would you like to do today?</p>
+                        </div>
+                        <div className="wc-dashboard-grid">
+                            <div className="wc-dash-card" onClick={() => setActiveView('dashboard')}>
+                                <div className="wc-dash-card-icon">📝</div>
+                                <h3>Post a Job</h3>
+                                <p>Create new job listings for workers</p>
+                            </div>
+                            <div className="wc-dash-card" onClick={() => setActiveView('dashboard')}>
+                                <div className="wc-dash-card-icon">📂</div>
+                                <h3>Manage Applications</h3>
+                                <p>Review candidates and manage hiring</p>
+                            </div>
+                            <div className="wc-dash-card" onClick={() => setActiveView('dashboard')}>
+                                <div className="wc-dash-card-icon">📋</div>
+                                <h3>My Job Postings</h3>
+                                <p>View and manage your active listings</p>
+                            </div>
+                            <div className="wc-dash-card disabled" onClick={() => toast('Book Workers coming soon!')}>
+                                <div className="wc-dash-card-icon">📅</div>
+                                <h3>Book Workers</h3>
+                                <p>Coming soon: Schedule and book workers</p>
+                            </div>
+                            <div className="wc-dash-card disabled" onClick={() => toast('Time Exchange Explorer coming soon!')}>
+                                <div className="wc-dash-card-icon">✈️</div>
+                                <h3>Time Exchange</h3>
+                                <p>Coming soon: Explore freelancer availability</p>
+                            </div>
+
+                            <div className="wc-dash-card" onClick={() => { fetchMyIntlJobs(); setActiveView('my-international-jobs'); }}>
+                                <div className="wc-dash-card-icon">📋</div>
+                                <h3>My International Jobs</h3>
+                                <p>View applicants for your overseas listings</p>
+                            </div>
+<div className="wc-dash-card" onClick={() => setActiveView('post-international')}>
+                                <div className="wc-dash-card-icon">🌍</div>
+                                <h3>Post International Job</h3>
+                                <p>Create overseas job opportunities</p>
+                            </div>
+                        </div>
+                    </section>
+                )}
+
+                {/* -------------------- POST INTERNATIONAL JOB VIEW -------------------- */}
+                {activeView === 'post-international' && (
+                    <section style={{ padding: '0' }}>
+                        {/* Hero Banner */}
+                        <div style={{ background: 'linear-gradient(135deg, #0f172a 0%, #1e3a8a 50%, #0f172a 100%)', padding: '3rem 2rem', borderRadius: '24px', marginBottom: '2rem', textAlign: 'center', position: 'relative', overflow: 'hidden', border: '1px solid rgba(59,130,246,0.15)' }}>
+                            <div style={{ position: 'absolute', top: '-50%', left: '-20%', width: '300px', height: '300px', background: 'radial-gradient(circle, rgba(59,130,246,0.15), transparent 70%)', pointerEvents: 'none' }} />
+                            <div style={{ position: 'absolute', bottom: '-40%', right: '-10%', width: '250px', height: '250px', background: 'radial-gradient(circle, rgba(16,185,129,0.15), transparent 70%)', pointerEvents: 'none' }} />
+                            <h1 style={{ fontSize: '2.2rem', margin: '0 0 0.5rem 0', background: 'linear-gradient(135deg, #60a5fa, #34d399)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', fontWeight: 800, position: 'relative' }}>
+                                🌍 Post International Job
+                            </h1>
+                            <p style={{ color: '#94a3b8', margin: '0', fontSize: '1.1rem', position: 'relative' }}>
+                                Create an overseas opportunity and discover global talent
+                            </p>
+                        </div>
+
+                        <div style={{ maxWidth: '800px', margin: '0 auto' }}>
+                            <div style={{ background: 'linear-gradient(145deg, rgba(30,41,59,0.8), rgba(15,23,42,0.9))', padding: '2.5rem', borderRadius: '24px', border: '1px solid rgba(255,255,255,0.08)', boxShadow: '0 10px 40px rgba(0,0,0,0.3)', position: 'relative', overflow: 'hidden' }}>
+                                <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '4px', background: 'linear-gradient(90deg, #3b82f6, #10b981)' }} />
+                                
+                                <form onSubmit={handlePostIntlJob}>
+                                    <h3 style={{ color: '#f1f5f9', marginTop: 0, marginBottom: '1.5rem', fontSize: '1.25rem', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '0.75rem' }}>Job Details</h3>
+                                    
+                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginBottom: '1.5rem' }}>
+                                        <div>
+                                            <label style={{ color: '#cbd5e1', fontWeight: 500, marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.9rem' }}><span>📝</span> Job Title *</label>
+                                            <input type="text" value={intlJob.title} onChange={e => setIntlJob({...intlJob, title: e.target.value})} required placeholder="e.g., Senior Developer" style={{ width: '100%', padding: '0.85rem 1rem', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.03)', color: 'white', fontSize: '0.95rem', outline: 'none', transition: 'all 0.3s' }} onFocus={e => { e.target.style.borderColor = '#3b82f6'; e.target.style.background = 'rgba(255,255,255,0.06)'; }} onBlur={e => { e.target.style.borderColor = 'rgba(255,255,255,0.1)'; e.target.style.background = 'rgba(255,255,255,0.03)'; }} />
+                                        </div>
+                                        <div>
+                                            <label style={{ color: '#cbd5e1', fontWeight: 500, marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.9rem' }}><span>💼</span> Job Type *</label>
+                                            <select value={intlJob.type} onChange={e => setIntlJob({...intlJob, type: e.target.value})} style={{ width: '100%', padding: '0.85rem 1rem', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(15,23,42,0.9)', color: 'white', fontSize: '0.95rem', outline: 'none', transition: 'all 0.3s', cursor: 'pointer' }} onFocus={e => e.target.style.borderColor = '#3b82f6'} onBlur={e => e.target.style.borderColor = 'rgba(255,255,255,0.1)'}>
+                                                <option value="white">White-Collar (Professional)</option>
+                                                <option value="blue">Blue-Collar (Skilled Labor)</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    
+                                    <h3 style={{ color: '#f1f5f9', marginTop: '2rem', marginBottom: '1.5rem', fontSize: '1.25rem', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '0.75rem' }}>Location & Compensation</h3>
+                                    
+                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginBottom: '1.5rem' }}>
+                                        <div>
+                                            <label style={{ color: '#cbd5e1', fontWeight: 500, marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.9rem' }}><span>🌍</span> Country *</label>
+                                            <select value={intlJob.country} onChange={e => setIntlJob({...intlJob, country: e.target.value})} required style={{ width: '100%', padding: '0.85rem 1rem', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(15,23,42,0.9)', color: 'white', fontSize: '0.95rem', outline: 'none', transition: 'all 0.3s', cursor: 'pointer' }} onFocus={e => e.target.style.borderColor = '#3b82f6'} onBlur={e => e.target.style.borderColor = 'rgba(255,255,255,0.1)'}>
+                                                <option value="">Select Country</option>
+                                                {COUNTRIES.map(c => <option key={c} value={c}>{c}</option>)}
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label style={{ color: '#cbd5e1', fontWeight: 500, marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.9rem' }}><span>🏙️</span> City</label>
+                                            <input type="text" value={intlJob.city} onChange={e => setIntlJob({...intlJob, city: e.target.value})} placeholder="e.g., Dubai" style={{ width: '100%', padding: '0.85rem 1rem', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.03)', color: 'white', fontSize: '0.95rem', outline: 'none', transition: 'all 0.3s' }} onFocus={e => { e.target.style.borderColor = '#3b82f6'; e.target.style.background = 'rgba(255,255,255,0.06)'; }} onBlur={e => { e.target.style.borderColor = 'rgba(255,255,255,0.1)'; e.target.style.background = 'rgba(255,255,255,0.03)'; }} />
+                                        </div>
+                                    </div>
+                                    
+                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginBottom: '2rem' }}>
+                                        <div>
+                                            <label style={{ color: '#cbd5e1', fontWeight: 500, marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.9rem' }}><span>💰</span> Salary</label>
+                                            <input type="text" value={intlJob.salary} onChange={e => setIntlJob({...intlJob, salary: e.target.value})} placeholder="e.g., 5000/month" style={{ width: '100%', padding: '0.85rem 1rem', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.03)', color: 'white', fontSize: '0.95rem', outline: 'none', transition: 'all 0.3s' }} onFocus={e => { e.target.style.borderColor = '#10b981'; e.target.style.background = 'rgba(255,255,255,0.06)'; }} onBlur={e => { e.target.style.borderColor = 'rgba(255,255,255,0.1)'; e.target.style.background = 'rgba(255,255,255,0.03)'; }} />
+                                        </div>
+                                        <div>
+                                            <label style={{ color: '#cbd5e1', fontWeight: 500, marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.9rem' }}><span>💵</span> Currency</label>
+                                            <select value={intlJob.currency} onChange={e => setIntlJob({...intlJob, currency: e.target.value})} style={{ width: '100%', padding: '0.85rem 1rem', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(15,23,42,0.9)', color: 'white', fontSize: '0.95rem', outline: 'none', transition: 'all 0.3s', cursor: 'pointer' }} onFocus={e => e.target.style.borderColor = '#10b981'} onBlur={e => e.target.style.borderColor = 'rgba(255,255,255,0.1)'}>
+                                                {CURRENCIES.map(c => <option key={c} value={c}>{c}</option>)}
+                                            </select>
+                                        </div>
+                                    </div>
+                                    
+                                    <h3 style={{ color: '#f1f5f9', marginTop: '2rem', marginBottom: '1.5rem', fontSize: '1.25rem', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '0.75rem' }}>Role Description & Requirements</h3>
+                                    
+                                    <div style={{ marginBottom: '1.5rem' }}>
+                                        <label style={{ color: '#cbd5e1', fontWeight: 500, marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.9rem' }}><span>📄</span> Description</label>
+                                        <textarea value={intlJob.description} onChange={e => setIntlJob({...intlJob, description: e.target.value})} placeholder="Describe the role, responsibilities..." rows={4} style={{ width: '100%', padding: '1rem', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.03)', color: 'white', fontSize: '0.95rem', outline: 'none', transition: 'all 0.3s', resize: 'vertical' }} onFocus={e => { e.target.style.borderColor = '#a855f7'; e.target.style.background = 'rgba(255,255,255,0.06)'; }} onBlur={e => { e.target.style.borderColor = 'rgba(255,255,255,0.1)'; e.target.style.background = 'rgba(255,255,255,0.03)'; }} />
+                                    </div>
+                                    <div style={{ marginBottom: '1.5rem' }}>
+                                        <label style={{ color: '#cbd5e1', fontWeight: 500, marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.9rem' }}><span>✅</span> Requirements</label>
+                                        <textarea value={intlJob.requirements} onChange={e => setIntlJob({...intlJob, requirements: e.target.value})} placeholder="e.g., 3+ years experience, valid passport..." rows={3} style={{ width: '100%', padding: '1rem', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.03)', color: 'white', fontSize: '0.95rem', outline: 'none', transition: 'all 0.3s', resize: 'vertical' }} onFocus={e => { e.target.style.borderColor = '#a855f7'; e.target.style.background = 'rgba(255,255,255,0.06)'; }} onBlur={e => { e.target.style.borderColor = 'rgba(255,255,255,0.1)'; e.target.style.background = 'rgba(255,255,255,0.03)'; }} />
+                                    </div>
+                                    <div style={{ marginBottom: '1.5rem' }}>
+                                        <label style={{ color: '#cbd5e1', fontWeight: 500, marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.9rem' }}><span>🎁</span> Benefits</label>
+                                        <textarea value={intlJob.benefits} onChange={e => setIntlJob({...intlJob, benefits: e.target.value})} placeholder="e.g., Free accommodation, annual flights..." rows={3} style={{ width: '100%', padding: '1rem', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.03)', color: 'white', fontSize: '0.95rem', outline: 'none', transition: 'all 0.3s', resize: 'vertical' }} onFocus={e => { e.target.style.borderColor = '#a855f7'; e.target.style.background = 'rgba(255,255,255,0.06)'; }} onBlur={e => { e.target.style.borderColor = 'rgba(255,255,255,0.1)'; e.target.style.background = 'rgba(255,255,255,0.03)'; }} />
+                                    </div>
+                                    
+                                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '2rem', padding: '1.25rem', borderRadius: '16px', background: 'linear-gradient(90deg, rgba(16,185,129,0.05), rgba(16,185,129,0.15))', border: '1px solid rgba(16,185,129,0.2)' }}>
+                                        <div>
+                                            <span style={{ color: '#10b981', fontWeight: 600, fontSize: '1.05rem', display: 'block', marginBottom: '4px' }}>✈️ Visa Sponsored</span>
+                                            <span style={{ color: '#94a3b8', fontSize: '0.85rem' }}>Are you providing visa assistance for this role?</span>
+                                        </div>
+                                        <label className="switch" style={{ marginBottom: 0, transform: 'scale(1.1)' }}>
+                                            <input type="checkbox" checked={intlJob.visa_sponsored} onChange={e => setIntlJob({...intlJob, visa_sponsored: e.target.checked})} />
+                                            <span className="slider"></span>
+                                        </label>
+                                    </div>
+                                    
+                                    <div style={{ display: 'flex', gap: '1rem' }}>
+                                        <button type="submit" disabled={submittingIntl} className="btn btn-primary" style={{ flex: 2, padding: '1rem', fontSize: '1.05rem', fontWeight: 600, borderRadius: '14px', background: 'linear-gradient(135deg, #3b82f6, #2563eb)', border: 'none', boxShadow: '0 4px 15px rgba(37,99,235,0.3)', transition: 'all 0.3s', color: 'white' }} onMouseOver={e => { if(!e.currentTarget.disabled) { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 6px 20px rgba(37,99,235,0.4)'; } }} onMouseOut={e => { if(!e.currentTarget.disabled) { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 4px 15px rgba(37,99,235,0.3)'; } }}>
+                                            {submittingIntl ? '⏳ Posting...' : '🌍 Publish International Job'}
+                                        </button>
+                                        <button type="button" onClick={() => setActiveView('my-international-jobs')} className="btn btn-secondary" style={{ flex: 1, padding: '1rem', fontSize: '1.05rem', fontWeight: 500, borderRadius: '14px', background: 'rgba(255,255,255,0.05)', color: '#cbd5e1', border: '1px solid rgba(255,255,255,0.1)', transition: 'all 0.3s' }} onMouseOver={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.1)'; e.currentTarget.style.color = '#fff'; }} onMouseOut={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; e.currentTarget.style.color = '#cbd5e1'; }}>
+                                            Cancel
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </section>
+                )}
+
+
+                {/* -------------------- MY INTERNATIONAL JOBS VIEW -------------------- */}
+                {activeView === 'my-international-jobs' && (
+                    <section className="wc-welcome-section">
+                        <div className="wc-welcome-hero">
+                            <h1>🌍 My International Job Postings</h1>
+                            <p>Manage your overseas listings and view applicants</p>
+                        </div>
+                        <div style={{ maxWidth: '900px', margin: '0 auto' }}>
+                            <button className="btn btn-primary" onClick={() => setActiveView('post-international')} style={{ marginBottom: '2rem', padding: '0.75rem 1.5rem' }}>
+                                ➕ Post New International Job
+                            </button>
+
+                            {loadingMyIntlJobs ? (
+                                <div style={{ textAlign: 'center', padding: '3rem', color: '#94a3b8' }}>Loading your international jobs...</div>
+                            ) : myIntlJobs.length === 0 ? (
+                                <div className="bc-glass-card" style={{ textAlign: 'center', padding: '3rem', color: '#94a3b8' }}>
+                                    <span style={{ fontSize: '3rem', display: 'block', marginBottom: '1rem' }}>🌍</span>
+                                    <p>You haven't posted any international jobs yet.</p>
+                                    <button className="btn btn-primary" onClick={() => setActiveView('post-international')} style={{ marginTop: '1rem' }}>Post Your First International Job</button>
+                                </div>
+                            ) : (
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                                    {myIntlJobs.map(job => (
+                                        <div key={job.id} className="bc-glass-card" style={{ padding: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', borderLeft: '4px solid ' + (job.type === 'blue' ? '#3b82f6' : '#8b5cf6'), transition: 'transform 0.2s, box-shadow 0.2s' }} onMouseOver={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 8px 25px rgba(0,0,0,0.3)'; }} onMouseOut={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none'; }}>
+                                            <div style={{ flex: 1 }}>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.5rem' }}>
+                                                    <h3 style={{ color: '#e2e8f0', margin: 0, fontSize: '1.15rem', textTransform: 'capitalize' }}>{job.title}</h3>
+                                                    <span style={{ background: job.status === 'Active' ? 'rgba(34,197,94,0.15)' : 'rgba(245,158,11,0.15)', color: job.status === 'Active' ? '#22c55e' : '#f59e0b', padding: '2px 10px', borderRadius: '20px', fontSize: '0.7rem', fontWeight: 600 }}>● {job.status}</span>
+                                                </div>
+                                                <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', color: '#94a3b8', fontSize: '0.8rem' }}>
+                                                    <span style={{ background: 'rgba(255,255,255,0.04)', padding: '3px 10px', borderRadius: '8px' }}>📍 {job.city ? job.city + ', ' : ''}{job.country}</span>
+                                                    <span style={{ background: 'rgba(34,197,94,0.06)', padding: '3px 10px', borderRadius: '8px', color: '#22c55e', fontWeight: 500 }}>💰 {job.currency} {job.salary}</span>
+                                                    <span style={{ background: job.type === 'blue' ? 'rgba(59,130,246,0.1)' : 'rgba(139,92,246,0.1)', padding: '3px 10px', borderRadius: '8px', color: job.type === 'blue' ? '#60a5fa' : '#c084fc' }}>{job.type === 'blue' ? '🔧 Blue-Collar' : '💼 White-Collar'}</span>
+                                                    {job.visa_sponsored && <span style={{ background: 'rgba(16,185,129,0.1)', padding: '3px 10px', borderRadius: '8px', color: '#10b981' }}>✈️ Visa</span>}
+                                                </div>
+                                                <p style={{ color: '#64748b', fontSize: '0.8rem', margin: '0.5rem 0 0 0', display: '-webkit-box', WebkitLineClamp: 1, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{job.description}</p>
+                                            </div>
+                                            <div style={{ display: 'flex', gap: '8px' }}>
+                                                <button
+                                                    className="btn btn-primary"
+                                                    onClick={() => handleManageIntlJob(job)}
+                                                    style={{ padding: '0.6rem 1.2rem', whiteSpace: 'nowrap' }}
+                                                >
+                                                    👥 View Applicants
+                                                </button>
+                                                <button
+                                                    className="btn btn-secondary"
+                                                    onClick={() => handleDeleteIntlJob(job.id)}
+                                                    style={{ padding: '0.6rem 1.2rem', whiteSpace: 'nowrap', background: '#fee2e2', color: '#dc2626', border: 'none' }}
+                                                >
+                                                    🗑️ Delete
+                                                </button>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    </section>
+                )}
+
+                {/* -------------------- INTERNATIONAL APPLICANTS MODAL -------------------- */}
+                {selectedIntlJob && (
+                    <div className="modal-overlay">
+                        <div className="modal-content" style={{ maxWidth: '800px' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+                                <h2 style={{ fontSize: '1.5rem', margin: 0 }}>🌍 International Job Applicants</h2>
+                                <button
+                                    onClick={() => setSelectedIntlJob(null)}
+                                    style={{ color: '#64748b', background: '#f1f5f9', border: '1px solid #e2e8f0', width: '40px', height: '40px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'all 0.2s' }}
+                                    onMouseOver={(e) => { e.currentTarget.style.background = '#fee2e2'; e.currentTarget.style.color = '#ef4444'; }}
+                                    onMouseOut={(e) => { e.currentTarget.style.background = '#f1f5f9'; e.currentTarget.style.color = '#64748b'; }}
+                                    aria-label="Close"
+                                >
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                                </button>
+                            </div>
+
+                            <div style={{ background: '#f8fafc', padding: '1rem', borderRadius: '8px', marginBottom: '1.5rem' }}>
+                                <h3 style={{ margin: 0, color: '#1e293b' }}>{selectedIntlJob.title}</h3>
+                                <p style={{ margin: 0, color: '#64748b', fontSize: '0.9rem' }}>
+                                    📍 {selectedIntlJob.city ? selectedIntlJob.city + ', ' : ''}{selectedIntlJob.country} &nbsp;|&nbsp; 💰 {selectedIntlJob.currency} {selectedIntlJob.salary}
+                                </p>
+                            </div>
+
+                            <div style={{ maxHeight: '400px', overflowY: 'auto' }}>
+                                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                                    <thead>
+                                        <tr style={{ borderBottom: '2px solid #e2e8f0', textAlign: 'left' }}>
+                                            <th style={{ padding: '12px', color: '#475569' }}>Candidate</th>
+                                            <th style={{ padding: '12px', color: '#475569' }}>Experience</th>
+                                            <th style={{ padding: '12px', color: '#475569' }}>Status</th>
+                                            <th style={{ padding: '12px', color: '#475569' }}>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {loadingIntlApps ? (
+                                            <tr><td colSpan="4" style={{ textAlign: 'center', padding: '20px' }}>Loading applicants...</td></tr>
+                                        ) : intlApplicants.length === 0 ? (
+                                            <tr><td colSpan="4" style={{ textAlign: 'center', padding: '20px', color: '#94a3b8' }}>No applicants yet for this listing.</td></tr>
+                                        ) : (
+                                            intlApplicants.map(app => (
+                                                <tr key={app.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                                                    <td style={{ padding: '12px' }}>
+                                                        <div style={{ fontWeight: 600, color: '#1e293b' }}>{app.applicant_name}</div>
+                                                        {app.applicant_profile?.avg_rating > 0 && (
+                                                            <div style={{ color: '#f59e0b', fontSize: '0.85rem' }}>⭐ {Number(app.applicant_profile.avg_rating).toFixed(1)}</div>
+                                                        )}
+                                                        {app.applicant_profile?.phone && (
+                                                            <div style={{ color: '#64748b', fontSize: '0.8rem' }}>📞 {app.applicant_profile.phone}</div>
+                                                        )}
+                                                    </td>
+                                                    <td style={{ padding: '12px', color: '#475569' }}>
+                                                        {app.applicant_profile?.experience_years ? app.applicant_profile.experience_years + ' Years' : 'N/A'}
+                                                    </td>
+                                                    <td style={{ padding: '12px' }}>
+                                                        <span style={{
+                                                            padding: '4px 12px',
+                                                            borderRadius: '12px',
+                                                            fontSize: '0.8rem',
+                                                            fontWeight: 600,
+                                                            background: app.status === 'accepted' ? '#dcfce7' : app.status === 'rejected' ? '#fee2e2' : '#fef3c7',
+                                                            color: app.status === 'accepted' ? '#15803d' : app.status === 'rejected' ? '#dc2626' : '#b45309'
+                                                        }}>
+                                                            {app.status === 'accepted' ? '✅ Accepted' : app.status === 'rejected' ? '❌ Rejected' : '⏳ Pending'}
+                                                        </span>
+                                                    </td>
+                                                    <td style={{ padding: '12px' }}>
+                                                        <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                                                            <button
+                                                                className="btn btn-secondary"
+                                                                style={{ padding: '6px 12px', fontSize: '0.8rem', background: '#e0f2fe', color: '#0369a1', border: 'none' }}
+                                                                onClick={() => navigate(`/profile/${app.applicant_id}`)}
+                                                            >
+                                                                👤 View Profile
+                                                            </button>
+                                                            {app.status === 'pending' && (
+                                                                <>
+                                                                    <button className="btn btn-primary" style={{ padding: '6px 12px', fontSize: '0.8rem' }} onClick={() => handleIntlStatusUpdate(app.id, 'accepted')}>Accept</button>
+                                                                    <button className="btn btn-secondary" style={{ padding: '6px 12px', fontSize: '0.8rem', background: '#fee2e2', color: '#dc2626', border: 'none' }} onClick={() => handleIntlStatusUpdate(app.id, 'rejected')}>Reject</button>
+                                                                </>
+                                                            )}
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            ))
+                                        )}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* -------------------- MAIN DASHBOARD VIEW -------------------- */}
+                {activeView === 'dashboard' && (
+                <>
                 {/* Mode Switcher */}
                 <div className="mode-switcher-container">
                     <button
@@ -734,6 +1230,7 @@ const EmployerDashboard = ({ user, logout }) => {
                     </div>
                 )}
 
+            </>)}
             </main>
 
             {/* Complaint Modal */}

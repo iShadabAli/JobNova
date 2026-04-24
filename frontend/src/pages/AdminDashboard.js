@@ -111,6 +111,7 @@ const AdminDashboard = ({ user, logout }) => {
             setLoading(false);
         };
         loadAll();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     // ---- ACTIONS ----

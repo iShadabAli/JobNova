@@ -91,6 +91,7 @@ const VoiceProfileAssistant = ({ profile, onUpdateProfile, onComplete }) => {
         ];
     };
 
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     useEffect(() => {
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         if (!SpeechRecognition) {
@@ -122,16 +123,17 @@ const VoiceProfileAssistant = ({ profile, onUpdateProfile, onComplete }) => {
         };
 
         recognitionRef.current = recognition;
+        const currentSynthesis = synthesisRef.current;
 
         return () => {
             if (recognitionRef.current) {
                 try { recognitionRef.current.abort(); } catch(e) {}
             }
-            if (synthesisRef.current) {
-                synthesisRef.current.cancel();
+            if (currentSynthesis) {
+                currentSynthesis.cancel();
             }
         };
-    }, []); // Only run once on mount
+    }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
     const speak = (text, callback) => {
         if (!synthesisRef.current) return;

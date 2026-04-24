@@ -39,6 +39,8 @@ app.use('/api/notifications', require('./routes/notificationRoutes'));
 app.use('/api/admin', require('./routes/adminRoutes'));
 app.use('/api/complaints', require('./routes/complaintRoutes'));
 app.use('/api/chat', require('./routes/chatRoutes'));
+app.use('/api/contact', require('./routes/contactRoutes'));
+app.use('/api/international-jobs', require('./routes/internationalJobRoutes'));
 
 // Error handling middleware
 app.use((err, req, res, next) => {

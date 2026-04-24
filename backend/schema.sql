@@ -150,3 +150,44 @@ CREATE TABLE IF NOT EXISTS public.reviews (
   UNIQUE(job_id, reviewer_id, reviewee_id) -- Only one review per interaction
 );
 
+
+
+-- ----------------------------
+-- CONTACT MESSAGES (Phase 1)
+-- ----------------------------
+
+DROP TABLE IF EXISTS public.contact_messages;
+
+CREATE TABLE public.contact_messages (
+  id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+  name text NOT NULL,
+  email text NOT NULL,
+  phone text,
+  message text NOT NULL,
+  status text DEFAULT 'unread',
+  created_at timestamptz DEFAULT now()
+);
+
+
+-- ----------------------------
+-- INTERNATIONAL JOBS (Phase 2)
+-- ----------------------------
+
+DROP TABLE IF EXISTS public.international_jobs;
+
+CREATE TABLE public.international_jobs (
+  id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+  employer_id uuid REFERENCES public.users(id) ON DELETE CASCADE,
+  title text NOT NULL,
+  description text,
+  country text NOT NULL,
+  city text,
+  salary text,
+  currency text DEFAULT 'USD',
+  visa_sponsored boolean DEFAULT false,
+  type text CHECK (type IN ('blue', 'white')) NOT NULL,
+  requirements text,
+  benefits text,
+  status text DEFAULT 'Active',
+  created_at timestamptz DEFAULT now()
+);

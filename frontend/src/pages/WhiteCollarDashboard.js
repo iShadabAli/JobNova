@@ -143,8 +143,67 @@ const WhiteCollarDashboard = ({ user, logout }) => {
     const t = (key) => translations[language][key] || key;
 
     // --- State: General Navigation ---
-    const [activeTab, setActiveTab] = useState('find-jobs'); // 'find-jobs' or 'my-jobs'
+    const [activeTab, _setActiveTab] = useState(() => {
+        const lastUser = sessionStorage.getItem('wc_lastUser');
+        if (lastUser !== user?.id) { sessionStorage.setItem('wc_activeTab', 'welcome'); sessionStorage.setItem('wc_lastUser', user?.id); return 'welcome'; }
+        return sessionStorage.getItem('wc_activeTab') || 'welcome';
+    });
+    const setActiveTab = (v) => { sessionStorage.setItem('wc_activeTab', v); _setActiveTab(v); window.history.pushState({ tab: v }, ''); };
+
+    useEffect(() => {
+        const onBack = (e) => {
+            const prev = e.state?.tab;
+            if (prev) { sessionStorage.setItem('wc_activeTab', prev); _setActiveTab(prev); }
+            else { sessionStorage.setItem('wc_activeTab', 'welcome'); _setActiveTab('welcome'); }
+        };
+        window.history.replaceState({ tab: activeTab }, '');
+        window.addEventListener('popstate', onBack);
+        return () => window.removeEventListener('popstate', onBack);
+    }, []); // eslint-disable-line react-hooks/exhaustive-deps
+    const [intlJobs, setIntlJobs] = useState([]);
+    const [filteredIntlJobs, setFilteredIntlJobs] = useState([]);
+    const [loadingIntlJobs, setLoadingIntlJobs] = useState(false);
+    const [intlSearchTerm, setIntlSearchTerm] = useState('');
+    const [intlCountryFilter, setIntlCountryFilter] = useState('');
+
+    useEffect(() => {
+        const fetchIntlJobs = async () => {
+            setLoadingIntlJobs(true);
+            try {
+                const response = await fetch('http://localhost:5000/api/international-jobs');
+                const result = await response.json();
+                if (result.success) {
+                    setIntlJobs(result.data);
+                    setFilteredIntlJobs(result.data);
+                }
+            } catch (error) {
+                console.error('Error fetching international jobs:', error);
+            } finally {
+                setLoadingIntlJobs(false);
+            }
+        };
+        fetchIntlJobs();
+    }, []);
+
+    useEffect(() => {
+        let filtered = intlJobs;
+        if (intlSearchTerm) {
+            const term = intlSearchTerm.toLowerCase();
+            filtered = filtered.filter(j =>
+                (j.title || '').toLowerCase().includes(term) ||
+                (j.description || '').toLowerCase().includes(term) ||
+                (j.city || '').toLowerCase().includes(term) ||
+                (j.country || '').toLowerCase().includes(term)
+            );
+        }
+        if (intlCountryFilter) {
+            filtered = filtered.filter(j => (j.city || '').toLowerCase().includes(intlCountryFilter.toLowerCase()));
+        }
+        setFilteredIntlJobs(filtered);
+    }, [intlSearchTerm, intlCountryFilter, intlJobs]);
+
     const [profileName, setProfileName] = useState('');
+    const [profileAvatar, setProfileAvatar] = useState('');
 
     // --- State: Find Jobs ---
     const [jobs, setJobs] = useState([]);
@@ -224,6 +283,9 @@ const WhiteCollarDashboard = ({ user, logout }) => {
                     const data = await res.json();
                     if (data.full_name) {
                         setProfileName(data.full_name);
+                    }
+                    if (data.avatar_url) {
+                        setProfileAvatar(data.avatar_url);
                     }
                 }
             } catch (error) {
@@ -416,30 +478,81 @@ const WhiteCollarDashboard = ({ user, logout }) => {
         setActiveTab('find-jobs');
     }, []);
 
+
+    const handleApplyIntlJob = async (jobId) => {
+        try {
+            const response = await fetch(`http://localhost:5000/api/international-jobs/${jobId}/apply`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ applicant_id: user.id })
+            });
+            const result = await response.json();
+            if (result.success) {
+                toast.success(language === 'ur' ? 'درخواست کامیابی کے ساتھ بھیجی گئی!' : 'Successfully applied for international job!');
+            } else {
+                toast.error(result.error || (language === 'ur' ? 'درخواست دینے میں ناکامی' : 'Failed to apply'));
+            }
+        } catch (error) {
+            console.error('Error applying for intl job:', error);
+            toast.error('Network error. Please try again.');
+        }
+    };
+
     return (
         <div className="wc-dashboard-container" dir={language === 'ur' ? 'rtl' : 'ltr'}>
             {/* Top Navigation Bar */}
             <nav className="wc-navbar">
-                <div className="wc-nav-brand">JobNova Pro</div>
-                <div className="wc-nav-links">
-                    <button
-                        className={`wc-nav-btn ${activeTab === 'find-jobs' ? 'active' : ''}`}
-                        onClick={() => setActiveTab('find-jobs')}
-                    >
-                        {t('nav_find_jobs')}
-                    </button>
-                    <button
-                        className={`wc-nav-btn ${activeTab === 'my-jobs' ? 'active' : ''}`}
-                        onClick={() => setActiveTab('my-jobs')}
-                    >
-                        {t('nav_my_jobs')}
-                    </button>
-                    <Link to="/profile" className="wc-nav-link">{t('nav_profile')}</Link>
+                <div 
+                    className="wc-nav-brand" 
+                    style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '10px' }}
+                    onClick={() => setActiveTab('welcome')}
+                    title="JobNova Pro Dashboard"
+                >
+                    <div style={{ background: '#4f46e5', padding: '6px', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                            <rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect>
+                            <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path>
+                        </svg>
+                    </div>
+                    <span style={{ fontWeight: 800, fontSize: '1.3rem', letterSpacing: '-0.5px', color: '#1e293b' }}>
+                        JobNova <span style={{ color: '#4f46e5' }}>Pro</span>
+                    </span>
                 </div>
+                <div className="wc-nav-links"></div>
                 <div className="wc-user-menu" style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+                    <div style={{ display: 'flex', gap: '10px', marginRight: '10px' }}>
+                        <Link to="/about" className="wc-nav-link" style={{ fontSize: '0.75rem', padding: '0.2rem 0.5rem' }}>About Us</Link>
+                        <Link to="/contact" className="wc-nav-link" style={{ fontSize: '0.75rem', padding: '0.2rem 0.5rem' }}>Contact Us</Link>
+                    </div>
 
                     <NotificationBell language={language} />
-                    <span className="wc-user-greeting">{t('nav_hello')}, {getDisplayName()}</span>
+                    <span className="wc-user-greeting" style={{ marginRight: '5px' }}>{t('nav_hello')}, {getDisplayName()}</span>
+                    <div 
+                        onClick={() => navigate('/profile')}
+                        style={{
+                            width: '36px',
+                            height: '36px',
+                            borderRadius: '50%',
+                            backgroundColor: '#4f46e5',
+                            color: 'white',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            fontWeight: 'bold',
+                            fontSize: '1rem',
+                            cursor: 'pointer',
+                            overflow: 'hidden',
+                            border: '2px solid white',
+                            boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                        }}
+                        title="My Profile"
+                    >
+                        {profileAvatar ? (
+                            <img src={profileAvatar} alt="Profile" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        ) : (
+                            getDisplayName() ? getDisplayName().charAt(0).toUpperCase() : 'U'
+                        )}
+                    </div>
                     <button onClick={logout} className="btn btn-outline-light btn-sm">{t('nav_logout')}</button>
                     <button 
                         onClick={() => setShowComplaintModal(true)} 
@@ -467,6 +580,115 @@ const WhiteCollarDashboard = ({ user, logout }) => {
 
             {/* Main Content Area */}
             <main className="wc-main-content">
+
+                {/* -------------------- WELCOME VIEW -------------------- */}
+                {activeTab === 'welcome' && (
+                    <section className="wc-welcome-section">
+                        <div className="wc-welcome-hero">
+                            <h1>Welcome back, {getDisplayName()}! 👋</h1>
+                            <p>What would you like to do today?</p>
+                        </div>
+                        <div className="wc-dashboard-grid">
+                            <div className="wc-dash-card" onClick={() => setActiveTab('find-jobs')}>
+                                <div className="wc-dash-card-icon">🔍</div>
+                                <h3>Find Jobs</h3>
+                                <p>Browse and apply for professional roles</p>
+                            </div>
+                            <div className="wc-dash-card" onClick={() => setActiveTab('my-jobs')}>
+                                <div className="wc-dash-card-icon">📋</div>
+                                <h3>My Applications</h3>
+                                <p>Track your applied jobs and offers</p>
+                            </div>
+                            <div className="wc-dash-card" onClick={() => setActiveTab('international-jobs')}>
+                                <div className="wc-dash-card-icon">🌍</div>
+                                <h3>International Jobs</h3>
+                                <p>Browse overseas corporate opportunities</p>
+                            </div>
+                            <div className="wc-dash-card disabled" onClick={() => toast('Scholarships portal coming soon!')}>
+                                <div className="wc-dash-card-icon">🎓</div>
+                                <h3>Scholarships</h3>
+                                <p>Coming soon: Explore educational opportunities</p>
+                            </div>
+                            <div className="wc-dash-card disabled" onClick={() => toast('Time Exchange Explorer coming soon!')}>
+                                <div className="wc-dash-card-icon">✈️</div>
+                                <h3>Time Exchange</h3>
+                                <p>Coming soon: Explore freelancer availability</p>
+                            </div>
+                        </div>
+                    </section>
+                )}
+
+                {/* -------------------- INTERNATIONAL JOBS TAB -------------------- */}
+                {activeTab === 'international-jobs' && (
+                    <section style={{ padding: 0 }}>
+                        {/* Hero Banner */}
+                        <div style={{ background: 'linear-gradient(135deg, #0f172a 0%, #2d1854 50%, #0f172a 100%)', padding: '3rem 2rem', borderRadius: '24px', marginBottom: '2rem', textAlign: 'center', position: 'relative', overflow: 'hidden', border: '1px solid rgba(139,92,246,0.15)' }}>
+                            <div style={{ position: 'absolute', top: '-50%', left: '-20%', width: '300px', height: '300px', background: 'radial-gradient(circle, rgba(139,92,246,0.12), transparent 70%)', pointerEvents: 'none' }} />
+                            <div style={{ position: 'absolute', bottom: '-40%', right: '-10%', width: '250px', height: '250px', background: 'radial-gradient(circle, rgba(59,130,246,0.1), transparent 70%)', pointerEvents: 'none' }} />
+                            <h1 style={{ fontSize: '2rem', margin: '0 0 0.5rem 0', background: 'linear-gradient(135deg, #a78bfa, #60a5fa)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', fontWeight: 700, position: 'relative' }}>
+                                International Opportunities
+                            </h1>
+                            <p style={{ color: '#94a3b8', margin: '0 0 1.5rem 0', fontSize: '1rem', position: 'relative' }}>
+                                Discover professional roles around the globe with visa sponsorship options
+                            </p>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', maxWidth: '600px', margin: '0 auto', position: 'relative' }}>
+                                <div style={{ position: 'relative' }}>
+                                    <span style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }}>🔍</span>
+                                    <input type="text" placeholder="Search jobs..." value={intlSearchTerm} onChange={(e) => setIntlSearchTerm(e.target.value)}
+                                        style={{ width: '100%', padding: '0.85rem 0.85rem 0.85rem 2.5rem', borderRadius: '14px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.06)', color: 'white', fontSize: '0.9rem', backdropFilter: 'blur(10px)', outline: 'none', transition: 'border 0.3s' }}
+                                        onFocus={e => e.target.style.borderColor = 'rgba(139,92,246,0.5)'} onBlur={e => e.target.style.borderColor = 'rgba(255,255,255,0.1)'} />
+                                </div>
+                                <div style={{ position: 'relative' }}>
+                                    <span style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }}>🏙️</span>
+                                    <input type="text" placeholder="Filter by city..." value={intlCountryFilter} onChange={(e) => setIntlCountryFilter(e.target.value)}
+                                        style={{ width: '100%', padding: '0.85rem 0.85rem 0.85rem 2.5rem', borderRadius: '14px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.06)', color: 'white', fontSize: '0.9rem', backdropFilter: 'blur(10px)', outline: 'none', transition: 'border 0.3s' }}
+                                        onFocus={e => e.target.style.borderColor = 'rgba(139,92,246,0.5)'} onBlur={e => e.target.style.borderColor = 'rgba(255,255,255,0.1)'} />
+                                </div>
+                            </div>
+                            <p style={{ color: '#475569', fontSize: '0.8rem', margin: '1rem 0 0 0', position: 'relative' }}>{filteredIntlJobs.length} opportunities available</p>
+                        </div>
+
+                        {/* Job Cards */}
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '1.25rem' }}>
+                            {loadingIntlJobs ? (
+                                <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '4rem 2rem', color: '#94a3b8' }}>
+                                    <p>Loading opportunities...</p>
+                                </div>
+                            ) : filteredIntlJobs.length > 0 ? (
+                                filteredIntlJobs.map(job => (
+                                    <div key={job.id} style={{ background: 'linear-gradient(145deg, rgba(30,41,59,0.8), rgba(15,23,42,0.9))', borderRadius: '20px', padding: '1.5rem', display: 'flex', flexDirection: 'column', border: '1px solid rgba(255,255,255,0.06)', transition: 'all 0.3s', position: 'relative', overflow: 'hidden' }}
+                                        onMouseOver={e => { e.currentTarget.style.transform = 'translateY(-4px)'; e.currentTarget.style.borderColor = 'rgba(139,92,246,0.3)'; e.currentTarget.style.boxShadow = '0 12px 40px rgba(0,0,0,0.4)'; }}
+                                        onMouseOut={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)'; e.currentTarget.style.boxShadow = 'none'; }}>
+                                        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '3px', background: job.type === 'blue' ? 'linear-gradient(90deg, #3b82f6, #60a5fa)' : 'linear-gradient(90deg, #8b5cf6, #a78bfa)' }} />
+                                        <div style={{ display: 'flex', gap: '6px', marginBottom: '1rem', flexWrap: 'wrap' }}>
+                                            <span style={{ background: job.type === 'blue' ? 'rgba(59,130,246,0.12)' : 'rgba(139,92,246,0.12)', color: job.type === 'blue' ? '#60a5fa' : '#a78bfa', padding: '4px 12px', borderRadius: '20px', fontSize: '0.7rem', fontWeight: 600 }}>{job.type === 'blue' ? 'Blue-Collar' : 'White-Collar'}</span>
+                                            {job.visa_sponsored && <span style={{ background: 'rgba(16,185,129,0.12)', color: '#34d399', padding: '4px 12px', borderRadius: '20px', fontSize: '0.7rem', fontWeight: 600 }}>Visa Sponsored</span>}
+                                        </div>
+                                        <h3 style={{ margin: '0 0 4px 0', fontSize: '1.15rem', color: '#f1f5f9', fontWeight: 600, textTransform: 'capitalize' }}>{job.title}</h3>
+                                        {job.employer && <p style={{ color: '#64748b', fontSize: '0.8rem', margin: '0 0 0.75rem 0' }}>Posted by {job.employer.first_name} {job.employer.last_name}</p>}
+                                        <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
+                                            <span style={{ color: '#94a3b8', fontSize: '0.82rem', background: 'rgba(255,255,255,0.04)', padding: '5px 12px', borderRadius: '10px' }}>{job.city ? job.city + ', ' : ''}{job.country}</span>
+                                            <span style={{ color: '#4ade80', fontSize: '0.82rem', fontWeight: 600, background: 'rgba(74,222,128,0.08)', padding: '5px 12px', borderRadius: '10px' }}>{job.currency} {job.salary}</span>
+                                        </div>
+                                        <p style={{ color: '#94a3b8', fontSize: '0.85rem', margin: '0 0 1.25rem 0', flex: 1, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', lineHeight: 1.6 }}>{job.description}</p>
+                                        <button onClick={() => handleApplyIntlJob(job.id)} disabled={job.applied}
+                                            style={{ width: '100%', padding: '0.75rem', borderRadius: '12px', border: 'none', background: 'linear-gradient(135deg, #8b5cf6, #7c3aed)', color: 'white', fontSize: '0.9rem', fontWeight: 600, cursor: 'pointer', transition: 'all 0.3s', marginTop: 'auto' }}
+                                            onMouseOver={e => { if(!e.currentTarget.disabled) { e.currentTarget.style.background = 'linear-gradient(135deg, #a78bfa, #8b5cf6)'; e.currentTarget.style.transform = 'scale(1.02)'; }}}
+                                            onMouseOut={e => { e.currentTarget.style.background = 'linear-gradient(135deg, #8b5cf6, #7c3aed)'; e.currentTarget.style.transform = 'scale(1)'; }}>
+                                            Apply Now
+                                        </button>
+                                    </div>
+                                ))
+                            ) : (
+                                <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '4rem 2rem', background: 'rgba(255,255,255,0.02)', borderRadius: '20px', border: '1px dashed rgba(255,255,255,0.1)' }}>
+                                    <span style={{ fontSize: '3rem', display: 'block', marginBottom: '1rem' }}>🌍</span>
+                                    <h3 style={{ color: '#e2e8f0', margin: '0 0 0.5rem 0' }}>No jobs found</h3>
+                                    <p style={{ color: '#64748b', margin: 0 }}>Try adjusting your search or filter criteria</p>
+                                </div>
+                            )}
+                        </div>
+                    </section>
+                )}
 
                 {/* -------------------- FIND JOBS TAB -------------------- */}
                 {activeTab === 'find-jobs' && (

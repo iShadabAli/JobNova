@@ -317,12 +317,8 @@ select.form-input {
 
 .wc-nav-links {
   display: flex;
-  gap: 1rem;
-  background: var(--bg-body);
-  padding: 0.5rem;
-  border-radius: 100px;
-  /* Pill shape */
-  border: 1px solid var(--border-color);
+  gap: 0.5rem;
+  align-items: center;
 }
 
 .wc-nav-link,
@@ -348,9 +344,9 @@ select.form-input {
 
 .wc-nav-link.active,
 .wc-nav-btn.active {
-  background: var(--primary);
-  color: white;
-  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
+  background: var(--primary-subtle);
+  color: var(--primary);
+  box-shadow: none;
 }
 
 .wc-user-menu {
@@ -2026,3 +2022,119 @@ input:checked+.slider:before {
   border-left: 4px solid #4f46e5;
 }
 
+/* --- Welcome Dashboard Landing Pages --- */
+.wc-welcome-section {
+  padding: 4rem 2rem;
+  animation: fadeIn 0.5s ease-out;
+}
+
+.wc-welcome-hero {
+  text-align: center;
+  margin-bottom: 4rem;
+}
+
+.wc-welcome-hero h1 {
+  font-size: 3rem;
+  font-weight: 800;
+  color: var(--text-main);
+  margin-bottom: 1rem;
+  background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.wc-welcome-hero p {
+  font-size: 1.25rem;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.wc-dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 2rem;
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+.wc-dash-card {
+  background: var(--glass-bg);
+  backdrop-filter: var(--backdrop-blur);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-xl);
+  padding: 2.5rem 2rem;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  box-shadow: var(--shadow-md);
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.wc-dash-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 4px;
+  background: linear-gradient(90deg, var(--primary), var(--secondary));
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.4s ease;
+}
+
+.wc-dash-card:hover {
+  transform: translateY(-10px);
+  box-shadow: var(--shadow-xl);
+  border-color: var(--primary-subtle);
+}
+
+.wc-dash-card:hover::before {
+  transform: scaleX(1);
+}
+
+.wc-dash-card.disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  filter: grayscale(0.8);
+}
+
+.wc-dash-card.disabled:hover {
+  transform: none;
+  box-shadow: var(--shadow-md);
+  border-color: var(--border-color);
+}
+
+.wc-dash-card.disabled:hover::before {
+  transform: scaleX(0);
+}
+
+.wc-dash-card-icon {
+  font-size: 3.5rem;
+  margin-bottom: 1.5rem;
+  filter: drop-shadow(0 4px 6px rgba(0,0,0,0.1));
+}
+
+.wc-dash-card h3 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--text-main);
+  margin-bottom: 0.75rem;
+}
+
+.wc-dash-card p {
+  color: var(--text-muted);
+  font-size: 1rem;
+  line-height: 1.5;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}

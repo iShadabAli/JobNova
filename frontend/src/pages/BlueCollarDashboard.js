@@ -1,6 +1,6 @@
 import toast from 'react-hot-toast';
 import React, { useState, useEffect, useCallback } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import StarRating from '../components/StarRating';
 import JobMap from '../components/JobMap';
 import NotificationBell from '../components/NotificationBell';
@@ -83,7 +83,23 @@ const translations = {
         alert_offer_fail: 'Failed to update offer status',
         tooltip_mic: 'Search by Voice',
         listening: 'Listening...',
-        voice_error: 'Speech recognition failed. Please try again.'
+        voice_error: 'Speech recognition failed. Please try again.',
+        welcome_title: 'Welcome back',
+        welcome_subtitle: 'What would you like to do today?',
+        card_find_jobs: 'Find Jobs',
+        card_find_jobs_desc: 'Browse local jobs near you',
+        card_my_jobs: 'My Applications',
+        card_my_jobs_desc: 'Track your applied jobs & offers',
+        card_my_ratings: 'My Ratings',
+        card_my_ratings_desc: 'View your employer feedback',
+        card_hunarmand: 'Hunarmand',
+        card_hunarmand_desc: 'Coming soon: AI skill matching',
+        card_international: 'International Jobs',
+        card_international_desc: 'Coming soon: Overseas opportunities',
+        card_time_exchange: 'Time Exchange',
+        card_time_exchange_desc: 'Coming soon: Freelance availability',
+        card_schedule: 'My Schedule',
+        card_schedule_desc: 'Set your availability & work hours'
     },
     ur: {
         toggle_lang: 'English',
@@ -155,7 +171,23 @@ const translations = {
         radius_filter: 'فاصلہ (km):',
         tooltip_mic: 'آواز سے تلاش کریں',
         listening: 'سن رہا ہے...',
-        voice_error: 'آواز کی شناخت ناکام ہو گئی۔ براہ کرم دوبارہ کوشش کریں۔'
+        voice_error: 'آواز کی شناخت ناکام ہو گئی۔ براہ کرم دوبارہ کوشش کریں۔',
+        welcome_title: 'خوش آمدید',
+        welcome_subtitle: 'آج آپ کیا کرنا چاہیں گے؟',
+        card_find_jobs: 'نئی نوکریاں',
+        card_find_jobs_desc: 'اپنے قریب کام تلاش کریں',
+        card_my_jobs: 'میرے کام',
+        card_my_jobs_desc: 'اپنی درخواستوں کا جائزہ لیں',
+        card_my_ratings: 'میری ریٹنگز',
+        card_my_ratings_desc: 'آجر کی طرف سے فیڈ بیک دیکھیں',
+        card_hunarmand: 'ہنرمند',
+        card_hunarmand_desc: 'جلد آ رہا ہے: AI ہنر میچنگ',
+        card_international: 'بیرونِ ملک نوکریاں',
+        card_international_desc: 'جلد آ رہا ہے: بیرونِ ملک مواقع',
+        card_time_exchange: 'ٹائم ایکسچینج',
+        card_time_exchange_desc: 'جلد آ رہا ہے: فری لانس دستیابی',
+        card_schedule: 'میرا شیڈیول',
+        card_schedule_desc: 'اپنی دستیابی اور اوقات مقرر کریں'
     }
 };
 
@@ -169,7 +201,21 @@ const BlueCollarDashboard = ({ user, logout }) => {
     const t = (key) => translations[language][key] || key;
 
     // --- State: General ---
-    const [activeTab, setActiveTab] = useState('find-jobs'); // 'find-jobs', 'my-jobs', 'my-ratings'
+    const [activeTab, setActiveTab] = useState('welcome');
+    // Handle Back Button
+    useEffect(() => {
+        const handlePopState = () => {
+            const hash = window.location.hash.replace('#', '') || 'welcome';
+            setActiveTab(hash);
+        };
+        window.addEventListener('popstate', handlePopState);
+        return () => window.removeEventListener('popstate', handlePopState);
+    }, []);
+
+    const handleTabChange = (tab) => {
+        setActiveTab(tab);
+        window.history.pushState(null, '', `#${tab}`);
+    }; // 'welcome', 'find-jobs', 'my-jobs', 'my-ratings'
     const [profileName, setProfileName] = useState('');
     const navigate = useNavigate();
 
@@ -195,6 +241,13 @@ const BlueCollarDashboard = ({ user, logout }) => {
 
     // --- State: Availability ---
     const [availability, setAvailability] = useState(true);
+
+    // International Jobs State
+    const [intlJobs, setIntlJobs] = useState([]);
+    const [filteredIntlJobs, setFilteredIntlJobs] = useState([]);
+    const [loadingIntlJobs, setLoadingIntlJobs] = useState(false);
+    const [intlSearchTerm, setIntlSearchTerm] = useState('');
+
     const [selectedDays, setSelectedDays] = useState(['Mon', 'Tue', 'Wed', 'Thu', 'Fri']);
     const [startTime, setStartTime] = useState('09:00');
     const [endTime, setEndTime] = useState('17:00');
@@ -256,6 +309,39 @@ const BlueCollarDashboard = ({ user, logout }) => {
     }, []);
 
     // Fetch Jobs (Depends on Location & Radius)
+    const fetchIntlJobs = useCallback(async () => {
+        setLoadingIntlJobs(true);
+        try {
+            const token = sessionStorage.getItem('token');
+            const response = await fetch('http://localhost:5000/api/international-jobs?type=blue', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (response.ok) {
+                const data = await response.json();
+                setIntlJobs(data.data);
+                setFilteredIntlJobs(data.data);
+            }
+        } catch (error) {
+            console.error('Failed to fetch international jobs:', error);
+        } finally {
+            setLoadingIntlJobs(false);
+        }
+    }, []);
+
+    useEffect(() => {
+        if (activeTab === 'international-jobs') {
+            fetchIntlJobs();
+        }
+    }, [activeTab, fetchIntlJobs]);
+
+    useEffect(() => {
+        let result = intlJobs;
+        if (intlSearchTerm) {
+            result = result.filter(job => job.title.toLowerCase().includes(intlSearchTerm.toLowerCase()));
+        }
+        setFilteredIntlJobs(result);
+    }, [intlSearchTerm, intlJobs]);
+
     const fetchJobs = useCallback(async (overrideSearchTerm) => {
         const termToUse = typeof overrideSearchTerm === 'string' ? overrideSearchTerm : searchTerm;
         setLoadingJobs(true);
@@ -277,9 +363,57 @@ const BlueCollarDashboard = ({ user, logout }) => {
             });
             if (response.ok) {
                 const data = await response.json();
-                const blueJobs = data.filter(j => j.type === 'blue');
+                
+                let blueJobs = data.filter(j => j.type === 'blue');
+                
+                // AI Skill Matching Engine
+                const userKeywords = [];
+                if (user?.profile) {
+                    if (user.profile.trade) userKeywords.push(...user.profile.trade.toLowerCase().split(/[\s,]+/));
+                    if (user.profile.skills) {
+                        try {
+                            const parsedSkills = JSON.parse(user.profile.skills);
+                            if (Array.isArray(parsedSkills)) userKeywords.push(...parsedSkills.map(s => s.toLowerCase()));
+                        } catch(e) {
+                            if (typeof user.profile.skills === 'string') userKeywords.push(...user.profile.skills.toLowerCase().split(/[\s,]+/));
+                        }
+                    }
+                    if (user.profile.bio) userKeywords.push(...user.profile.bio.toLowerCase().split(/[\s,]+/));
+                }
+                
+                if (userKeywords.length > 0) {
+                    blueJobs = blueJobs.map(job => {
+                        let score = 0;
+                        const jobText = `${job.title} ${job.titleUrdu || ''} ${job.description || ''} ${job.category || ''}`.toLowerCase();
+                        
+                        // Check for direct trade match (highest weight)
+                        if (user.profile?.trade && jobText.includes(user.profile.trade.toLowerCase())) {
+                            score += 50;
+                        }
+                        
+                        // Check keyword overlap
+                        
+                        userKeywords.forEach(kw => {
+                            if (kw.length > 2 && jobText.includes(kw)) {
+                                
+                                score += 15;
+                            }
+                        });
+                        
+                        // Cap at 98% for realism
+                        let finalScore = Math.min(98, score > 0 ? score + 30 : 0); 
+                        return { ...job, matchScore: finalScore };
+                    });
+                    
+                    // Sort by match score descending
+                    blueJobs.sort((a, b) => (b.matchScore || 0) - (a.matchScore || 0));
+                }
+
                 setJobs(blueJobs);
                 setFilteredJobs(blueJobs);
+
+// eslint-disable-next-line react-hooks/exhaustive-deps
+
             }
         } catch (error) {
             console.error('Failed to fetch jobs:', error);
@@ -287,6 +421,7 @@ const BlueCollarDashboard = ({ user, logout }) => {
             setLoadingJobs(false);
             setIsSearchingAI(false);
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [userLocation, radius, searchTerm]);
 
     // Initial Load
@@ -531,53 +666,57 @@ const BlueCollarDashboard = ({ user, logout }) => {
         <div className="wc-dashboard-container" dir={language === 'ur' ? 'rtl' : 'ltr'}>
             {/* Top Navigation Bar */}
             <nav className="wc-navbar">
-                <div className="wc-nav-brand">JobNova Worker</div>
-                <div className="wc-nav-links" style={{ gap: '10px' }}>
-                    <button
-                        className={`btn ${activeTab === 'find-jobs' ? 'btn-primary' : 'btn-outline-light'}`}
-                        style={{
-                            backgroundColor: activeTab === 'find-jobs' ? '#4f46e5' : 'transparent',
-                            color: activeTab === 'find-jobs' ? 'white' : '#1e293b',
-                            border: activeTab === 'find-jobs' ? 'none' : '1px solid #cbd5e1',
-                            marginRight: '5px'
-                        }}
-                        onClick={() => setActiveTab('find-jobs')}
-                    >
-                        {t('nav_find_jobs')}
-                    </button>
-                    <button
-                        className={`btn ${activeTab === 'my-jobs' ? 'btn-primary' : 'btn-outline-light'}`}
-                        style={{
-                            backgroundColor: activeTab === 'my-jobs' ? '#4f46e5' : 'transparent',
-                            color: activeTab === 'my-jobs' ? 'white' : '#1e293b',
-                            border: activeTab === 'my-jobs' ? 'none' : '1px solid #cbd5e1',
-                            marginRight: '5px'
-                        }}
-                        onClick={() => setActiveTab('my-jobs')}
-                    >
-                        {t('nav_my_jobs')}
-                    </button>
-                    <button
-                        className={`btn ${activeTab === 'my-ratings' ? 'btn-primary' : 'btn-outline-light'}`}
-                        style={{
-                            backgroundColor: activeTab === 'my-ratings' ? '#4f46e5' : 'transparent',
-                            color: activeTab === 'my-ratings' ? 'white' : '#1e293b',
-                            border: activeTab === 'my-ratings' ? 'none' : '1px solid #cbd5e1',
-                            marginRight: '10px'
-                        }}
-                        onClick={() => setActiveTab('my-ratings')}
-                    >
-                        {t('nav_my_ratings')}
-                    </button>
-                    <Link to="/profile" className="btn btn-text" style={{ textDecoration: 'none', color: '#4f46e5', fontWeight: '600' }}>
-                        {t('nav_profile')}
-                    </Link>
+                <div 
+                    className="wc-nav-brand" 
+                    style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '10px' }}
+                    onClick={() => handleTabChange('welcome')}
+                    title="JobNova Dashboard"
+                >
+                    <div style={{ background: 'var(--primary)', padding: '6px', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path>
+                        </svg>
+                    </div>
+                    <span style={{ fontWeight: 800, fontSize: '1.3rem', letterSpacing: '-0.5px', color: '#1e293b' }}>
+                        JobNova <span style={{ color: 'var(--primary)' }}>Hunarmand</span>
+                    </span>
                 </div>
                 <div className="wc-user-menu" style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+                    <div style={{ display: 'flex', gap: '5px', marginRight: '5px' }}>
+                        <button className="wc-nav-link" style={{ fontSize: '0.75rem', padding: '0.2rem 0.5rem', background: 'transparent', border: 'none', cursor: 'pointer' }} onClick={() => navigate('/about')}>About Us</button>
+                        <button className="wc-nav-link" style={{ fontSize: '0.75rem', padding: '0.2rem 0.5rem', background: 'transparent', border: 'none', cursor: 'pointer' }} onClick={() => navigate('/contact')}>Contact Us</button>
+                    </div>
 
-                    <NotificationBell language={language} />
-                    <span className="wc-user-greeting">{t('nav_hello')}, {getDisplayName()}!</span>
-                    <button onClick={logout} className="btn btn-outline-light btn-sm">{t('nav_logout')}</button>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <NotificationBell language={language} />
+                        <div 
+                            onClick={() => navigate('/profile')}
+                            style={{ 
+                                width: '40px', 
+                                height: '40px', 
+                                borderRadius: '50%', 
+                                background: 'linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)',
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                color: 'white',
+                                fontWeight: 'bold',
+                                border: '2px solid white',
+                                boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                                overflow: 'hidden'
+                            }}
+                            title="Go to My Profile"
+                        >
+                            {user?.profile_picture ? (
+                                <img src={user.profile_picture} alt="Profile" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                            ) : (
+                                getDisplayName().charAt(0).toUpperCase()
+                            )}
+                        </div>
+                        <span className="wc-user-greeting" style={{ fontWeight: 600 }}>{getDisplayName()}</span>
+                        <button onClick={logout} className="btn btn-outline-light btn-sm" style={{ padding: '0.4rem 1rem', borderRadius: '8px' }}>{t('nav_logout')}</button>
+                    </div>
                     <button 
                         onClick={() => setShowComplaintModal(true)} 
                         style={{ 
@@ -603,71 +742,122 @@ const BlueCollarDashboard = ({ user, logout }) => {
             </nav>
 
             <main className="wc-main-content">
-                {/* Status Hero Section */}
-                <section className="bc-search-section" style={{ padding: '3rem 2rem', marginBottom: '2rem' }}>
-                    <h1>{t('hero_welcome')}</h1>
-                    <p className="subtitle" style={{ marginBottom: '1.5rem' }}>{t('hero_subtitle')}</p>
 
-                    <div style={{ display: 'flex', gap: '20px', justifyContent: 'center', flexWrap: 'wrap' }}>
-                        {/* Main Target: Availability Card */}
-                        <div className="bc-glass-card" style={{ maxWidth: '450px', flex: 1, display: 'block', margin: '0 auto', textAlign: language === 'ur' ? 'right' : 'left' }}>
-                            <div className="status-text" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                                <div>
-                                    <span style={{ fontWeight: 700, fontSize: '1.2rem', color: '#fff' }}>{t('status_current')}</span>
-                                    <span className="status-urdu" style={{ display: 'block', color: 'rgba(255,255,255,0.8)' }}>{t('status_available')}</span>
+                {/* -------------------- WELCOME TAB -------------------- */}
+                {activeTab === 'welcome' && (
+                    <section className="wc-welcome-section">
+                        <div className="wc-welcome-hero">
+                            <h1>{t('welcome_title')}, {getDisplayName()}! 👋</h1>
+                            <p>{t('welcome_subtitle')}</p>
+                        </div>
+                        <div className="wc-dashboard-grid">
+                            <div className="wc-dash-card" onClick={() => handleTabChange('find-jobs')} style={{ border: '2px solid var(--primary)', position: 'relative', overflow: 'hidden' }}>
+                                <div style={{ position: 'absolute', top: '-10px', right: '-10px', width: '60px', height: '60px', background: 'var(--primary)', opacity: 0.1, borderRadius: '50%' }}></div>
+                                <div className="wc-dash-card-icon" style={{ background: 'linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)', width: '50px', height: '50px', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 15px' }}>
+                                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                                        <path d="M12 8v4"></path>
+                                        <path d="M12 16h.01"></path>
+                                    </svg>
                                 </div>
-                                <label className="switch">
-                                    <input type="checkbox" checked={availability} onChange={() => setAvailability(!availability)} />
-                                    <span className="slider"></span>
-                                </label>
+                                <h3 style={{ color: 'var(--primary)', fontWeight: 700 }}>{language === 'ur' ? 'ہنرمند (Hunarmand)' : 'Hunarmand (AI Match)'}</h3>
+                                <p style={{ fontWeight: 500 }}>{language === 'ur' ? 'اپنی مہارت کے مطابق نوکریاں تلاش کریں' : 'AI automatically finds jobs matched to your skills'}</p>
                             </div>
-
-                            {/* Detailed Schedule Manager */}
-                            <div className="availability-manager" style={{ marginTop: '1.5rem', paddingTop: '1.5rem', borderTop: '1px solid rgba(255,255,255,0.2)' }}>
-                                <p style={{ fontSize: '1rem', color: '#fff', fontWeight: 600, marginBottom: '0.8rem' }}>{t('work_days')}</p>
-                                <div className="days-selector">
-                                    {DAYS_OF_WEEK.map(day => (
-                                        <button
-                                            key={day}
-                                            className={`day-btn ${selectedDays.includes(day) ? 'selected' : ''}`}
-                                            onClick={() => toggleDay(day)}
-                                        >
-                                            {t(`day_${day}`)}
-                                        </button>
-                                    ))}
-                                </div>
-
-                                <p style={{ fontSize: '1rem', color: '#fff', fontWeight: 600, margin: '1.5rem 0 0.8rem 0' }}>{t('work_hours')}</p>
-                                <div className="hours-selector" style={{ alignItems: 'flex-end' }}>
-                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
-                                        <label style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.8)', fontWeight: 500 }}>{t('time_start')}</label>
-                                        <input type="time" value={startTime} onChange={e => setStartTime(e.target.value)} />
-                                    </div>
-                                    <span style={{ color: 'rgba(255,255,255,0.8)', fontWeight: 500, paddingBottom: '10px' }}>{t('to_word')}</span>
-                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
-                                        <label style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.8)', fontWeight: 500 }}>{t('time_end')}</label>
-                                        <input type="time" value={endTime} onChange={e => setEndTime(e.target.value)} />
-                                    </div>
-                                </div>
-
-                                <button
-                                    className="btn btn-primary"
-                                    style={{ width: '100%', marginTop: '1.5rem', background: '#ffffff', color: '#4f46e5', border: 'none', fontWeight: 700 }}
-                                    onClick={saveAvailability}
-                                    disabled={savingAvailability}
-                                >
-                                    {savingAvailability ? t('btn_saving') : t('btn_save_schedule')}
-                                </button>
+                            <div className="wc-dash-card" onClick={() => handleTabChange('my-jobs')}>
+                                <div className="wc-dash-card-icon">📋</div>
+                                <h3>{t('card_my_jobs')}</h3>
+                                <p>{t('card_my_jobs_desc')}</p>
+                            </div>
+                            <div className="wc-dash-card" onClick={() => handleTabChange('my-ratings')}>
+                                <div className="wc-dash-card-icon">⭐</div>
+                                <h3>{t('card_my_ratings')}</h3>
+                                <p>{t('card_my_ratings_desc')}</p>
+                            </div>
+                            <div className="wc-dash-card" onClick={() => handleTabChange('my-schedule')}>
+                                <div className="wc-dash-card-icon">📅</div>
+                                <h3>{t('card_schedule')}</h3>
+                                <p>{t('card_schedule_desc')}</p>
+                            </div>
+                            <div className="wc-dash-card" onClick={() => handleTabChange('international-jobs')}>
+                                <div className="wc-dash-card-icon">🌍</div>
+                                <h3>{t('card_international')}</h3>
+                                <p>{t('card_international_desc')}</p>
+                            </div>
+                            <div className="wc-dash-card disabled" onClick={() => toast(language === 'ur' ? 'جلد آ رہا ہے!' : 'Time Exchange coming soon!')}>
+                                <div className="wc-dash-card-icon">✈️</div>
+                                <h3>{t('card_time_exchange')}</h3>
+                                <p>{t('card_time_exchange_desc')}</p>
                             </div>
                         </div>
-                    </div>
-                </section>
+                    </section>
+                )}
+
+                {/* --- My Schedule Tab --- */}
+                {activeTab === 'my-schedule' && (
+                    <section className="wc-welcome-section">
+                        <div className="wc-welcome-hero">
+                            <h1>{t('card_schedule')} 📅</h1>
+                            <p>{t('card_schedule_desc')}</p>
+                        </div>
+                        <section className="bc-search-section" style={{ padding: '3rem 2rem', borderRadius: '24px', maxWidth: '550px', margin: '0 auto' }}>
+                            <div className="bc-glass-card" style={{ textAlign: language === 'ur' ? 'right' : 'left' }}>
+                                <div className="status-text" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                                    <div>
+                                        <span style={{ fontWeight: 700, fontSize: '1.2rem', color: '#fff' }}>{t('status_current')}</span>
+                                        <span className="status-urdu" style={{ display: 'block', color: 'rgba(255,255,255,0.8)' }}>{t('status_available')}</span>
+                                    </div>
+                                    <label className="switch">
+                                        <input type="checkbox" checked={availability} onChange={() => setAvailability(!availability)} />
+                                        <span className="slider"></span>
+                                    </label>
+                                </div>
+
+                                <div className="availability-manager" style={{ marginTop: '1.5rem', paddingTop: '1.5rem', borderTop: '1px solid rgba(255,255,255,0.2)' }}>
+                                    <p style={{ fontSize: '1rem', color: '#fff', fontWeight: 600, marginBottom: '0.8rem' }}>{t('work_days')}</p>
+                                    <div className="days-selector">
+                                        {DAYS_OF_WEEK.map(day => (
+                                            <button
+                                                key={day}
+                                                className={`day-btn ${selectedDays.includes(day) ? 'selected' : ''}`}
+                                                onClick={() => toggleDay(day)}
+                                            >
+                                                {t(`day_${day}`)}
+                                            </button>
+                                        ))}
+                                    </div>
+
+                                    <p style={{ fontSize: '1rem', color: '#fff', fontWeight: 600, margin: '1.5rem 0 0.8rem 0' }}>{t('work_hours')}</p>
+                                    <div className="hours-selector" style={{ alignItems: 'flex-end' }}>
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                                            <label style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.8)', fontWeight: 500 }}>{t('time_start')}</label>
+                                            <input type="time" value={startTime} onChange={e => setStartTime(e.target.value)} />
+                                        </div>
+                                        <span style={{ color: 'rgba(255,255,255,0.8)', fontWeight: 500, paddingBottom: '10px' }}>{t('to_word')}</span>
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                                            <label style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.8)', fontWeight: 500 }}>{t('time_end')}</label>
+                                            <input type="time" value={endTime} onChange={e => setEndTime(e.target.value)} />
+                                        </div>
+                                    </div>
+
+                                    <button
+                                        className="btn btn-primary"
+                                        style={{ width: '100%', marginTop: '1.5rem', background: '#ffffff', color: '#4f46e5', border: 'none', fontWeight: 700 }}
+                                        onClick={saveAvailability}
+                                        disabled={savingAvailability}
+                                    >
+                                        {savingAvailability ? t('btn_saving') : t('btn_save_schedule')}
+                                    </button>
+                                </div>
+                            </div>
+                        </section>
+                    </section>
+                )}
 
                 {/* --- Find Jobs Tab --- */}
                 {activeTab === 'find-jobs' && (
                     <section className="wc-job-results">
                         <div className="wc-results-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
-                            <h2>{t('jobs_header')}</h2>
+                            <h2>{language === 'ur' ? 'ہنرمند (آپ کے لیے تجاویز)' : 'Hunarmand (AI Recommendations)'}</h2>
 
                             {/* Search and Filters */}
                             <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
@@ -815,7 +1005,15 @@ const BlueCollarDashboard = ({ user, logout }) => {
                                                 {job.titleUrdu?.charAt(0) || job.title?.charAt(0) || 'J'}
                                             </div>
                                             <div className="wc-job-info">
-                                                <h3 style={{ fontSize: '1.4rem', color: '#4f46e5' }}>{language === 'ur' && job.titleUrdu ? job.titleUrdu : job.title}</h3>
+                                                
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                                    <h3 style={{ fontSize: '1.4rem', color: '#4f46e5', margin: 0 }}>{language === 'ur' && job.titleUrdu ? job.titleUrdu : job.title}</h3>
+                                                    {job.matchScore && job.matchScore > 50 && (
+                                                        <span style={{ background: '#ecfdf5', color: '#10b981', padding: '2px 8px', borderRadius: '12px', fontSize: '0.75rem', fontWeight: 700, border: '1px solid #a7f3d0' }}>
+                                                            🎯 {job.matchScore}% Match
+                                                        </span>
+                                                    )}
+                                                </div>
                                                 <div className="wc-job-meta">
                                                     <span
                                                         className="wc-company-name"
@@ -872,7 +1070,7 @@ const BlueCollarDashboard = ({ user, logout }) => {
                         ) : myApps.length === 0 ? (
                             <div style={{ textAlign: 'center', padding: '3rem 0', background: 'white', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
                                 <h3>{t('no_apps_yet')}</h3>
-                                <button className="btn btn-primary" style={{ marginTop: '1rem' }} onClick={() => setActiveTab('find-jobs')}>{t('btn_browse_jobs')}</button>
+                                <button className="btn btn-primary" style={{ marginTop: '1rem' }} onClick={() => handleTabChange('find-jobs')}>{t('btn_browse_jobs')}</button>
                             </div>
                         ) : (
                             <div className="wc-job-list">
@@ -1006,6 +1204,82 @@ const BlueCollarDashboard = ({ user, logout }) => {
                             </div>
                         </div>
                     </div>
+                )}
+                {/* -------------------- INTERNATIONAL JOBS TAB -------------------- */}
+                {activeTab === 'international-jobs' && (
+                    <section className="bc-search-section">
+                        <div className="wc-welcome-hero" style={{ 
+                            background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)',
+                            padding: '3rem 2rem',
+                            borderRadius: '24px',
+                            marginBottom: '2rem',
+                            position: 'relative',
+                            overflow: 'hidden',
+                            border: '1px solid rgba(255,255,255,0.05)'
+                        }}>
+                            <div style={{ position: 'absolute', top: '-10%', right: '-10%', width: '300px', height: '300px', background: 'radial-gradient(circle, rgba(79,70,229,0.15) 0%, transparent 70%)', filter: 'blur(40px)' }}></div>
+                            <h1 style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>🌍 {language === 'ur' ? 'بیرونی نوکریاں' : 'Global Opportunities'}</h1>
+                            <p style={{ fontSize: '1.1rem', opacity: 0.8 }}>{language === 'ur' ? 'دنیا بھر میں ہنر مند افراد کے لیے بہترین مواقع' : 'Premium international roles for skilled professionals'}</p>
+                        </div>
+
+                        <div style={{ 
+                            display: 'flex', 
+                            gap: '1rem', 
+                            marginBottom: '2rem',
+                            background: 'rgba(255,255,255,0.03)',
+                            padding: '1rem',
+                            borderRadius: '20px',
+                            backdropFilter: 'blur(10px)',
+                            border: '1px solid rgba(255,255,255,0.05)'
+                        }}>
+                            <input
+                                type="text"
+                                placeholder={language === 'ur' ? 'نوکری تلاش کریں...' : 'Search international roles...'}
+                                value={intlSearchTerm}
+                                onChange={(e) => setIntlSearchTerm(e.target.value)}
+                                style={{ flex: 1, padding: '1rem', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(15,23,42,0.4)', color: 'white' }}
+                            />
+                        </div>
+
+                        <div className="bc-jobs-grid">
+                            {loadingIntlJobs ? (
+                                <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '4rem' }}>
+                                    <div className="loading-spinner" style={{ margin: '0 auto 1rem' }}></div>
+                                    <p style={{ color: '#94a3b8' }}>Finding global opportunities...</p>
+                                </div>
+                            ) : filteredIntlJobs.length > 0 ? (
+                                filteredIntlJobs.map(job => (
+                                    <div key={job.id} className="bc-job-card" style={{ 
+                                        background: 'rgba(30,41,59,0.4)',
+                                        border: '1px solid rgba(255,255,255,0.05)',
+                                        transition: 'all 0.3s ease'
+                                    }}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
+                                            <h3 style={{ margin: 0, color: '#f8fafc' }}>{job.title}</h3>
+                                            {job.visa_sponsored && (
+                                                <span style={{ background: 'rgba(16,185,129,0.15)', color: '#10b981', padding: '4px 10px', borderRadius: '20px', fontSize: '0.75rem', fontWeight: 600 }}>
+                                                    ✈️ Visa
+                                                </span>
+                                            )}
+                                        </div>
+                                        <div style={{ display: 'flex', gap: '1rem', marginBottom: '1.5rem', color: '#94a3b8', fontSize: '0.9rem' }}>
+                                            <span>📍 {job.country}</span>
+                                            <span>💰 {job.currency} {job.salary}</span>
+                                        </div>
+                                        <p style={{ fontSize: '0.9rem', color: '#cbd5e1', marginBottom: '1.5rem', flex: 1 }}>{job.description}</p>
+                                        <button className="btn btn-primary" style={{ width: '100%' }} onClick={() => toast.success('Application sent!')}>
+                                            {language === 'ur' ? 'درخواست دیں' : 'Apply Now'}
+                                        </button>
+                                    </div>
+                                ))
+                            ) : (
+                                <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '4rem', background: 'rgba(255,255,255,0.02)', borderRadius: '24px' }}>
+                                    <span style={{ fontSize: '3rem', display: 'block', marginBottom: '1rem' }}>🌍</span>
+                                    <p style={{ color: '#94a3b8' }}>No international jobs found.</p>
+                                </div>
+                            )}
+                        </div>
+                    </section>
                 )}
             </main>
 

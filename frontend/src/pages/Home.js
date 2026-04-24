@@ -1,13 +1,11 @@
 import React from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '../context/LanguageContext';
-import { useAuth } from '../context/AuthContext';
 import LanguageToggle from '../components/LanguageToggle';
 import './Home.css';
 
 const Home = () => {
     const { t, language } = useLanguage();
-    const { user } = useAuth();
     const navigate = useNavigate();
 
     // Dynamically apply RTL if Urdu is selected
