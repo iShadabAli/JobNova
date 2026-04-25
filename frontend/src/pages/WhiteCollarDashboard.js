@@ -69,7 +69,20 @@ const translations = {
         alert_review_fail: 'Failed to submit review',
         tooltip_mic: 'Search by Voice',
         listening: 'Listening...',
-        voice_error: 'Speech recognition failed. Please try again.'
+        voice_error: 'Speech recognition failed. Please try again.',
+        te_header: 'Time Exchange ✈️',
+        te_subtitle: 'Travel and Work Explorer',
+        te_announce_btn: 'Announce My Travel',
+        te_from_label: 'From City',
+        te_to_label: 'To City',
+        te_start_label: 'Start Date',
+        te_end_label: 'End Date',
+        te_available_check: 'Available for work during travel?',
+        te_post_btn: 'Post Travel Announcement',
+        te_my_announcements: 'My Travel Announcements 📋',
+        te_no_announcements: "You haven't posted any travel plans yet.",
+        te_networking: 'Travelers to my Destination 🌍',
+        te_no_networking: 'No other travelers found for your destination yet.',
     },
     ur: {
         toggle_lang: 'English',
@@ -148,7 +161,130 @@ const WhiteCollarDashboard = ({ user, logout }) => {
         if (lastUser !== user?.id) { sessionStorage.setItem('wc_activeTab', 'welcome'); sessionStorage.setItem('wc_lastUser', user?.id); return 'welcome'; }
         return sessionStorage.getItem('wc_activeTab') || 'welcome';
     });
-    const setActiveTab = (v) => { sessionStorage.setItem('wc_activeTab', v); _setActiveTab(v); window.history.pushState({ tab: v }, ''); };
+
+    const handleTabChange = (tab) => { 
+        sessionStorage.setItem('wc_activeTab', tab); 
+        _setActiveTab(tab); 
+        window.history.pushState({ tab }, '', `#${tab}`); 
+        if (tab === 'time-exchange') { 
+            fetchMyTravel(); 
+            fetchTERequests(); 
+        } 
+    };
+        const fetchMyTravel = async () => {
+        try {
+            const res = await fetch(`http://localhost:5000/api/time-exchange/user/${user.id}`);
+            const result = await res.json();
+            if (result.success) setTravelAnnouncements(result.data);
+        } catch (err) { console.error('Error fetching travel:', err); }
+    };
+
+    const fetchNetworking = async (toCity) => {
+        if (!toCity) return;
+        try {
+            const res = await fetch(`http://localhost:5000/api/time-exchange?to_city=${toCity}`);
+            const result = await res.json();
+            if (result.success) {
+                setNetworkingTravelers(result.data.filter(t => t.user_id !== user.id));
+            }
+        } catch (err) { console.error('Error fetching networking:', err); }
+    };
+
+    const handlePostTravel = async (e) => {
+        e.preventDefault();
+        setLoadingTE(true);
+        try {
+            const res = await fetch('http://localhost:5000/api/time-exchange', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ ...travelForm, user_id: user.id })
+            });
+            const result = await res.json();
+            if (result.success) {
+                toast.success('Travel announcement posted!');
+                setTravelForm({ from_city: '', to_city: '', travel_date_start: '', travel_date_end: '', available_for_work: true, skills: user?.skills || '' });
+                fetchMyTravel();
+            } else { toast.error(result.error); }
+        } catch (err) { toast.error('Connection error'); }
+        finally { setLoadingTE(false); }
+    };
+
+        const handleDeleteTravel = async (id) => {
+        toast((t) => (
+            <div style={{ textAlign: 'center' }}>
+                <p style={{ margin: '0 0 12px 0', fontWeight: 600, color: '#1e293b' }}>
+                    {language === 'ur' ? 'کیا آپ اس اعلان کو حذف کرنا چاہتے ہیں؟' : 'Delete this travel announcement?'}
+                </p>
+                <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
+                    <button 
+                        onClick={async () => {
+                            toast.dismiss(t.id);
+                            try {
+                                const res = await fetch(`http://localhost:5000/api/time-exchange/${id}`, { method: 'DELETE' });
+                                const result = await res.json();
+                                if (result.success) {
+                                    toast.success(language === 'ur' ? 'حذف کر دیا گیا' : 'Deleted successfully');
+                                    fetchMyTravel();
+                                }
+                            } catch (err) { toast.error('Error deleting'); }
+                        }}
+                        style={{ background: '#ef4444', color: '#fff', border: 'none', padding: '8px 16px', borderRadius: '10px', cursor: 'pointer', fontWeight: 600, fontSize: '0.85rem' }}
+                    >
+                        {language === 'ur' ? 'ہاں، حذف کریں' : 'Yes, Delete'}
+                    </button>
+                    <button 
+                        onClick={() => toast.dismiss(t.id)}
+                        style={{ background: '#f1f5f9', color: '#475569', border: '1px solid #e2e8f0', padding: '8px 16px', borderRadius: '10px', cursor: 'pointer', fontWeight: 600, fontSize: '0.85rem' }}
+                    >
+                        {language === 'ur' ? 'منسوخ کریں' : 'Cancel'}
+                    </button>
+                </div>
+            </div>
+        ), { duration: 6000, position: 'top-center', style: { borderRadius: '20px', padding: '16px', boxShadow: '0 10px 25px rgba(0,0,0,0.1)' } });
+    };
+
+    
+    const fetchTERequests = useCallback(async () => {
+        if (!user?.id) return;
+        setLoadingTERequests(true);
+        try {
+            const res = await fetch(`http://localhost:5000/api/time-exchange/requests/${user.id}`);
+            const result = await res.json();
+            if (result.success) setTERequests(result.data);
+        } catch (err) { console.error('Error fetching TE requests:', err); }
+        finally { setLoadingTERequests(false); }
+    }, [user?.id]);
+
+    useEffect(() => {
+        if (activeTab === 'time-exchange') {
+            fetchMyTravel();
+            fetchTERequests();
+        }
+    }, [activeTab, fetchTERequests]);
+
+    const handleTERequestStatus = async (requestId, status) => {
+        try {
+            const res = await fetch(`http://localhost:5000/api/time-exchange/requests/${requestId}/status`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ status })
+            });
+            const result = await res.json();
+            if (result.success) {
+                const msg = status === 'Accepted' 
+                    ? (language === 'ur' ? 'پیشکش قبول کر لی گئی! 🤝' : 'Offer Accepted! 🤝')
+                    : (language === 'ur' ? 'پیشکش مسترد کر دی گئی' : 'Offer Declined');
+                
+                toast.success(msg, {
+                    duration: 4000,
+                    icon: status === 'Accepted' ? '✅' : '❌',
+                    style: { borderRadius: '15px', background: '#1e293b', color: '#fff', fontWeight: 600 }
+                });
+                fetchTERequests();
+            }
+        } catch (err) { toast.error(language === 'ur' ? 'سٹیٹس اپ ڈیٹ کرنے میں مسٔلہ پیش آیا' : 'Error updating status'); }
+    };
+
 
     useEffect(() => {
         const onBack = (e) => {
@@ -225,6 +361,20 @@ const WhiteCollarDashboard = ({ user, logout }) => {
 
     // --- State: Support Modal ---
     const [showComplaintModal, setShowComplaintModal] = useState(false);
+    
+    const [teRequests, setTERequests] = useState([]);
+    const [loadingTERequests, setLoadingTERequests] = useState(false);
+const [travelAnnouncements, setTravelAnnouncements] = useState([]);
+    const [networkingTravelers, setNetworkingTravelers] = useState([]);
+    const [loadingTE, setLoadingTE] = useState(false);
+    const [travelForm, setTravelForm] = useState({
+        from_city: '',
+        to_city: '',
+        travel_date_start: '',
+        travel_date_end: '',
+        available_for_work: true,
+        skills: user?.skills || ''
+    });
 
     // --- State: Rating Modal ---
     const [showRatingModal, setShowRatingModal] = useState(false);
@@ -398,7 +548,7 @@ const WhiteCollarDashboard = ({ user, logout }) => {
                 if (appsRes.ok) setMyApps(await appsRes.json());
 
                 // Switch to my apps tab to see it
-                setActiveTab('my-jobs');
+                handleTabChange('my-jobs');
             } else {
                 const err = await response.json();
                 toast.error(err.message || t('alert_app_fail'));
@@ -475,7 +625,8 @@ const WhiteCollarDashboard = ({ user, logout }) => {
             setFilterType(parsed.durationFilter);
         }
 
-        setActiveTab('find-jobs');
+        handleTabChange('find-jobs');
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
 
@@ -505,7 +656,7 @@ const WhiteCollarDashboard = ({ user, logout }) => {
                 <div 
                     className="wc-nav-brand" 
                     style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '10px' }}
-                    onClick={() => setActiveTab('welcome')}
+                    onClick={() => handleTabChange('welcome')}
                     title="JobNova Pro Dashboard"
                 >
                     <div style={{ background: '#4f46e5', padding: '6px', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -581,7 +732,7 @@ const WhiteCollarDashboard = ({ user, logout }) => {
             {/* Main Content Area */}
             <main className="wc-main-content">
 
-                {/* -------------------- WELCOME VIEW -------------------- */}
+                                {/* -------------------- WELCOME VIEW -------------------- */}
                 {activeTab === 'welcome' && (
                     <section className="wc-welcome-section">
                         <div className="wc-welcome-hero">
@@ -589,30 +740,30 @@ const WhiteCollarDashboard = ({ user, logout }) => {
                             <p>What would you like to do today?</p>
                         </div>
                         <div className="wc-dashboard-grid">
-                            <div className="wc-dash-card" onClick={() => setActiveTab('find-jobs')}>
+                            <div className="wc-dash-card" onClick={() => handleTabChange('find-jobs')}>
                                 <div className="wc-dash-card-icon">🔍</div>
                                 <h3>Find Jobs</h3>
                                 <p>Browse and apply for professional roles</p>
                             </div>
-                            <div className="wc-dash-card" onClick={() => setActiveTab('my-jobs')}>
+                            <div className="wc-dash-card" onClick={() => handleTabChange('my-jobs')}>
                                 <div className="wc-dash-card-icon">📋</div>
                                 <h3>My Applications</h3>
                                 <p>Track your applied jobs and offers</p>
                             </div>
-                            <div className="wc-dash-card" onClick={() => setActiveTab('international-jobs')}>
+                            <div className="wc-dash-card" onClick={() => handleTabChange('international-jobs')}>
                                 <div className="wc-dash-card-icon">🌍</div>
                                 <h3>International Jobs</h3>
                                 <p>Browse overseas corporate opportunities</p>
+                            </div>
+                            <div className="wc-dash-card" onClick={() => handleTabChange('time-exchange')}>
+                                <div className="wc-dash-card-icon">✈️</div>
+                                <h3>{t('te_header')}</h3>
+                                <p>{t('te_subtitle')}</p>
                             </div>
                             <div className="wc-dash-card disabled" onClick={() => toast('Scholarships portal coming soon!')}>
                                 <div className="wc-dash-card-icon">🎓</div>
                                 <h3>Scholarships</h3>
                                 <p>Coming soon: Explore educational opportunities</p>
-                            </div>
-                            <div className="wc-dash-card disabled" onClick={() => toast('Time Exchange Explorer coming soon!')}>
-                                <div className="wc-dash-card-icon">✈️</div>
-                                <h3>Time Exchange</h3>
-                                <p>Coming soon: Explore freelancer availability</p>
                             </div>
                         </div>
                     </section>
@@ -665,7 +816,15 @@ const WhiteCollarDashboard = ({ user, logout }) => {
                                             {job.visa_sponsored && <span style={{ background: 'rgba(16,185,129,0.12)', color: '#34d399', padding: '4px 12px', borderRadius: '20px', fontSize: '0.7rem', fontWeight: 600 }}>Visa Sponsored</span>}
                                         </div>
                                         <h3 style={{ margin: '0 0 4px 0', fontSize: '1.15rem', color: '#f1f5f9', fontWeight: 600, textTransform: 'capitalize' }}>{job.title}</h3>
-                                        {job.employer && <p style={{ color: '#64748b', fontSize: '0.8rem', margin: '0 0 0.75rem 0' }}>Posted by {job.employer.first_name} {job.employer.last_name}</p>}
+                                        {job.employer && (
+                                            <p 
+                                                style={{ color: '#8b5cf6', fontSize: '0.8rem', margin: '0 0 0.75rem 0', cursor: 'pointer', fontWeight: 600 }}
+                                                onClick={() => navigate(`/profile/${job.employer_id}`)}
+                                                title="View Employer Profile"
+                                            >
+                                                🏢 Posted by {job.employer.first_name} {job.employer.last_name} (View Profile 👤)
+                                            </p>
+                                        )}
                                         <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
                                             <span style={{ color: '#94a3b8', fontSize: '0.82rem', background: 'rgba(255,255,255,0.04)', padding: '5px 12px', borderRadius: '10px' }}>{job.city ? job.city + ', ' : ''}{job.country}</span>
                                             <span style={{ color: '#4ade80', fontSize: '0.82rem', fontWeight: 600, background: 'rgba(74,222,128,0.08)', padding: '5px 12px', borderRadius: '10px' }}>{job.currency} {job.salary}</span>
@@ -685,6 +844,179 @@ const WhiteCollarDashboard = ({ user, logout }) => {
                                     <h3 style={{ color: '#e2e8f0', margin: '0 0 0.5rem 0' }}>No jobs found</h3>
                                     <p style={{ color: '#64748b', margin: 0 }}>Try adjusting your search or filter criteria</p>
                                 </div>
+                            )}
+                        </div>
+                    </section>
+                )}
+
+                                {/* -------------------- TIME EXCHANGE TAB -------------------- */}
+                {activeTab === 'time-exchange' && (
+                    <section className="wc-welcome-section">
+                        <div className="wc-welcome-hero" style={{ background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)' }}>
+                            <h1>{t('te_header')}</h1>
+                            <p>{t('te_subtitle')}</p>
+                        </div>
+
+                        <div className="te-container" style={{ padding: '2rem', maxWidth: '1200px', margin: '0 auto', display: 'grid', gridTemplateColumns: '1fr 1.5fr', gap: '2rem' }}>
+                            <div className="bc-search-section" style={{ padding: '2rem', borderRadius: '24px', height: 'fit-content', background: '#fff', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}>
+                                <h2 style={{ color: '#1e293b', marginBottom: '1.5rem', fontSize: '1.5rem' }}>{t('te_announce_btn')}</h2>
+                                <form onSubmit={handlePostTravel} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                                    <div className="form-group">
+                                        <label style={{ color: '#64748b', fontSize: '0.9rem', marginBottom: '5px', display: 'block' }}>{t('te_from_label')}</label>
+                                        <input type="text" required placeholder="e.g. London" value={travelForm.from_city} onChange={e => setTravelForm({...travelForm, from_city: e.target.value})} style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #e2e8f0' }} />
+                                    </div>
+                                    <div className="form-group">
+                                        <label style={{ color: '#64748b', fontSize: '0.9rem', marginBottom: '5px', display: 'block' }}>{t('te_to_label')}</label>
+                                        <input type="text" required placeholder="e.g. New York" value={travelForm.to_city} onChange={e => setTravelForm({...travelForm, to_city: e.target.value})} style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #e2e8f0' }} />
+                                    </div>
+                                    <div style={{ display: 'flex', gap: '1rem' }}>
+                                        <div className="form-group" style={{ flex: 1 }}>
+                                            <label style={{ color: '#64748b', fontSize: '0.9rem', marginBottom: '5px', display: 'block' }}>{t('te_start_label')}</label>
+                                            <input type="date" required value={travelForm.travel_date_start} onChange={e => setTravelForm({...travelForm, travel_date_start: e.target.value})} style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #e2e8f0' }} />
+                                        </div>
+                                        <div className="form-group" style={{ flex: 1 }}>
+                                            <label style={{ color: '#64748b', fontSize: '0.9rem', marginBottom: '5px', display: 'block' }}>{t('te_end_label')}</label>
+                                            <input type="date" required value={travelForm.travel_date_end} onChange={e => setTravelForm({...travelForm, travel_date_end: e.target.value})} style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #e2e8f0' }} />
+                                        </div>
+                                    </div>
+                                    <div className="form-group" style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 0' }}>
+                                        <input type="checkbox" id="te_avail" checked={travelForm.available_for_work} onChange={e => setTravelForm({...travelForm, available_for_work: e.target.checked})} style={{ width: '18px', height: '18px' }} />
+                                        <label htmlFor="te_avail" style={{ color: '#1e293b', cursor: 'pointer' }}>{t('te_available_check')}</label>
+                                    </div>
+                                    <button type="submit" disabled={loadingTE} className="btn btn-primary" style={{ padding: '12px', fontWeight: 600 }}>
+                                        {loadingTE ? t('btn_saving') || 'Saving...' : t('te_post_btn')}
+                                    </button>
+                                </form>
+                            </div>
+
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+                                <div style={{ background: '#fff', borderRadius: '24px', padding: '1.5rem', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}>
+                                    <h2 style={{ fontSize: '1.25rem', fontWeight: 700, marginBottom: '1rem', color: '#1e293b' }}>{t('te_my_announcements')}</h2>
+                                    {travelAnnouncements.length === 0 ? (
+                                        <p style={{ color: '#64748b' }}>{t('te_no_announcements')}</p>
+                                    ) : (
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                                            {travelAnnouncements.map(ann => (
+                                                <div key={ann.id} style={{ padding: '1rem', border: '1px solid #e2e8f0', borderRadius: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                    <div>
+                                                        <div style={{ fontWeight: 600, color: '#1e293b' }}>{ann.from_city} ➔ {ann.to_city}</div>
+                                                        <div style={{ fontSize: '0.85rem', color: '#64748b' }}>{new Date(ann.travel_date_start).toLocaleDateString()} to {new Date(ann.travel_date_end).toLocaleDateString()}</div>
+                                                        {ann.available_for_work && <span style={{ fontSize: '0.75rem', background: '#dcfce7', color: '#166534', padding: '2px 8px', borderRadius: '10px', marginTop: '4px', display: 'inline-block' }}>Available for Work</span>}
+                                                    </div>
+                                                    <div style={{ display: 'flex', gap: '8px' }}>
+                                                        <button onClick={() => fetchNetworking(ann.to_city)} className="btn btn-outline-primary" style={{ padding: '4px 10px', fontSize: '0.8rem' }}>Find Others</button>
+                                                        <button onClick={() => handleDeleteTravel(ann.id)} style={{ color: '#ef4444', background: 'none', border: 'none', cursor: 'pointer' }}>
+                                                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 6h18m-2 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+
+                                <div style={{ background: '#fff', borderRadius: '24px', padding: '1.5rem', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}>
+                                    <h2 style={{ fontSize: '1.25rem', fontWeight: 700, marginBottom: '1rem', color: '#1e293b' }}>{t('te_networking')}</h2>
+                                    {networkingTravelers.length === 0 ? (
+                                        <p style={{ color: '#64748b' }}>{t('te_no_networking')}</p>
+                                    ) : (
+                                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                                            {networkingTravelers.map(trav => (
+                                                <div key={trav.id} style={{ padding: '1rem', border: '1px solid #e2e8f0', borderRadius: '12px' }}>
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
+                                                        <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: '#4f46e5', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '0.8rem' }}>
+                                                            {trav.user?.profile_picture ? <img src={trav.user.profile_picture} alt="Profile" style={{width:'100%', height:'100%', borderRadius:'50%'}} /> : trav.user?.full_name?.charAt(0)}
+                                                        </div>
+                                                        <div style={{ fontWeight: 600, fontSize: '0.9rem' }}>{trav.user?.full_name}</div>
+                                                    </div>
+                                                    <div style={{ fontSize: '0.8rem', color: '#64748b' }}>Arriving from: {trav.from_city}</div>
+                                                    <div style={{ fontSize: '0.8rem', color: '#64748b' }}>Dates: {new Date(trav.travel_date_start).toLocaleDateString()}</div>
+                                                    <button onClick={() => navigate('/profile/' + trav.user_id)} className="btn btn-primary" style={{ width: '100%', marginTop: '10px', padding: '5px', fontSize: '0.8rem' }}>View Profile</button>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* -------------------- TIME EXCHANGE HIRE REQUESTS -------------------- */}
+                        <div style={{ marginTop: '2.5rem', background: '#fff', padding: '2rem', borderRadius: '24px', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)', border: '1px solid #e2e8f0' }}>
+                            <h2 style={{ fontSize: '1.5rem', fontWeight: 700, color: '#1e293b', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                💼 {language === 'ur' ? 'کام کی درخواستیں' : 'Work Hire Requests'}
+                                {teRequests.filter(r => r.status === 'Pending').length > 0 && (
+                                    <span style={{ fontSize: '0.75rem', background: '#ef4444', color: '#fff', padding: '4px 10px', borderRadius: '12px' }}>
+                                        {teRequests.filter(r => r.status === 'Pending').length} NEW
+                                    </span>
+                                )}
+                            </h2>
+
+                            {loadingTERequests ? (
+                                <div style={{ textAlign: 'center', padding: '2rem' }}>
+                                    <div className="loading-spinner"></div>
+                                </div>
+                            ) : teRequests.length > 0 ? (
+                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1.5rem' }}>
+                                    {teRequests.map(req => (
+                                        <div key={req.id} style={{ background: 'white', padding: '2rem', borderRadius: '30px', border: '1px solid #e2e8f0', boxShadow: '0 15px 35px rgba(0,0,0,0.05)', position: 'relative', overflow: 'hidden' }}>
+                                            <div style={{ position: 'absolute', top: 0, right: 0, padding: '8px 16px', background: req.status === 'Pending' ? '#f59e0b' : req.status === 'Accepted' ? '#10b981' : '#ef4444', color: '#fff', fontSize: '0.7rem', fontWeight: 900, borderBottomLeftRadius: '20px', letterSpacing: '1px' }}>{req.status.toUpperCase()}</div>
+                                            
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '1.5rem' }}>
+                                                <div style={{ width: '60px', height: '60px', borderRadius: '18px', background: 'linear-gradient(135deg, #4f46e5, #7c3aed)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.8rem', color: 'white', boxShadow: '0 10px 20px rgba(79,70,229,0.2)' }}>
+                                                    {req.employer?.first_name?.charAt(0) || '🏢'}
+                                                </div>
+                                                <div>
+                                                    <h3 style={{ margin: 0, color: '#1e293b', fontSize: '1.3rem', fontWeight: 800 }}>{req.employer?.first_name} {req.employer?.last_name}</h3>
+                                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                                        <p style={{ margin: 0, color: '#64748b', fontSize: '0.9rem', fontWeight: 500 }}>Verified Employer</p>
+                                                        <button 
+                                                            onClick={() => navigate(`/profile/${req.employer_id}`)}
+                                                            style={{ background: 'none', border: 'none', color: '#4f46e5', fontSize: '0.8rem', padding: 0, cursor: 'pointer', textAlign: 'left', fontWeight: 600, textDecoration: 'underline' }}
+                                                        >
+                                                            {language === 'ur' ? 'آجر کی پروفائل دیکھیں' : 'View Employer Profile'}
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div style={{ background: '#f8fafc', borderRadius: '20px', padding: '15px', marginBottom: '1.5rem', border: '1px solid #e2e8f0' }}>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', color: '#334155', fontSize: '1rem', fontWeight: 600 }}>
+                                                    <span style={{ fontSize: '1.2rem' }}>📍</span> {req.travel?.from_city}
+                                                    <span style={{ color: '#94a3b8' }}>➔</span>
+                                                    <span style={{ fontSize: '1.2rem' }}>🎯</span> {req.travel?.to_city}
+                                                </div>
+                                            </div>
+
+                                            <div style={{ position: 'relative', marginBottom: '2rem' }}>
+                                                <div style={{ position: 'absolute', left: '-10px', top: '0', bottom: '0', width: '4px', background: '#4f46e5', borderRadius: '2px' }}></div>
+                                                <p style={{ margin: 0, paddingLeft: '15px', color: '#475569', fontSize: '1rem', fontStyle: 'italic', lineHeight: '1.6' }}>
+                                                    "{req.message || "I'm interested in hiring you for your travel period."}"
+                                                </p>
+                                            </div>
+
+                                            {req.status === 'Pending' && (
+                                                <div style={{ display: 'flex', gap: '12px' }}>
+                                                    <button 
+                                                        onClick={() => handleTERequestStatus(req.id, 'Accepted')}
+                                                        style={{ flex: 2, padding: '14px', borderRadius: '18px', border: 'none', background: 'linear-gradient(135deg, #4f46e5, #7c3aed)', color: 'white', fontWeight: 800, fontSize: '1rem', cursor: 'pointer', boxShadow: '0 10px 20px rgba(79,70,229,0.2)' }}
+                                                    >
+                                                        {language === 'ur' ? 'قبول کریں' : 'Accept Offer'}
+                                                    </button>
+                                                    <button 
+                                                        onClick={() => handleTERequestStatus(req.id, 'Rejected')}
+                                                        style={{ flex: 1, padding: '14px', borderRadius: '18px', border: '1px solid #fee2e2', background: '#fff5f5', color: '#ef4444', fontWeight: 800, fontSize: '1rem', cursor: 'pointer' }}
+                                                    >
+                                                        {language === 'ur' ? 'مسترد' : 'Decline'}
+                                                    </button>
+                                                </div>
+                                            )}
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : (
+                                <p style={{ color: '#64748b', textAlign: 'center', padding: '2rem', border: '1px dashed #e2e8f0', borderRadius: '16px' }}>
+                                    No requests yet.
+                                </p>
                             )}
                         </div>
                     </section>
@@ -848,7 +1180,7 @@ const WhiteCollarDashboard = ({ user, logout }) => {
                                 <div className="empty-icon">📝</div>
                                 <h3>{t('no_apps_yet')}</h3>
                                 <p>{t('head_back')}</p>
-                                <button className="btn btn-primary" style={{ marginTop: '1rem' }} onClick={() => setActiveTab('find-jobs')}>
+                                <button className="btn btn-primary" style={{ marginTop: '1rem' }} onClick={() => handleTabChange('find-jobs')}>
                                     {t('btn_browse_jobs')}
                                 </button>
                             </div>

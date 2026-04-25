@@ -1,6 +1,8 @@
 const express = require('express');
 const router = express.Router();
 const { supabaseAdmin: supabase } = require('../config/supabase');
+const notificationService = require('../services/notificationService');
+
 
 // GET /api/international-jobs — Fetch all active international jobs (with optional filters)
 router.get('/', async (req, res) => {
@@ -97,10 +99,11 @@ router.delete('/:id', async (req, res) => {
 router.post('/:id/apply', async (req, res) => {
     try {
         const { id } = req.params;
-        const { applicant_id } = req.body; // In real app, comes from req.user.id
+        const { applicant_id } = req.body; 
+        
         
         if (!applicant_id) {
-            return res.status(400).json({ success: false, error: 'Applicant ID is required' });
+                        return res.status(400).json({ success: false, error: 'Applicant ID is required' });
         }
 
         const { data, error } = await supabase
@@ -109,11 +112,24 @@ router.post('/:id/apply', async (req, res) => {
             .select();
 
         if (error) {
-            if (error.code === '23505') {
+                        if (error.code === '23505') {
                 return res.status(400).json({ success: false, error: 'You have already applied for this job' });
             }
             throw error;
         }
+
+                // Notify the employer
+        try {
+            const { data: job } = await supabase.from('international_jobs').select('employer_id, title').eq('id', id).single();
+            if (job) {
+                await notificationService.createNotification(
+                    job.employer_id,
+                    'NEW_INTL_APPLICANT',
+                    `New applicant for international job: ${job.title}`,
+                    id
+                );
+            }
+        } catch (notifyErr) { console.error('Notification failed:', notifyErr); }
 
         res.status(201).json({ success: true, data: data[0] });
     } catch (error) {
@@ -157,19 +173,28 @@ router.get('/:id/applications', async (req, res) => {
 
         // Fetch profile info for each applicant
         const mappedData = await Promise.all(apps.map(async (app) => {
-            const { data: profile } = await supabase
-                .from('profiles')
-                .select('id, first_name, last_name, email, phone, experience_years, avg_rating, total_reviews')
+            const { data: user } = await supabase
+                .from('users')
+                .select('id, first_name, last_name, phone')
                 .eq('id', app.applicant_id)
                 .single();
 
+            const { data: profile } = await supabase
+                .from('profiles')
+                .select('user_id, full_name, experience, avg_rating, total_reviews')
+                .eq('user_id', app.applicant_id)
+                .single();
+
+            const fallbackName = user ? `${user.first_name || ''} ${user.last_name || ''}`.trim() : 'Candidate';
+            
             return {
                 id: app.id,
                 status: app.status,
                 applied_at: app.created_at,
                 applicant_id: app.applicant_id,
-                applicant_name: profile ? `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || 'Candidate' : 'Candidate',
-                applicant_profile: profile || {}
+                applicant_name: profile?.full_name || fallbackName,
+                applicant_profile: profile || {},
+                applicant_user: user || {}
             };
         }));
 
@@ -194,6 +219,20 @@ router.put('/applications/:appId/status', async (req, res) => {
 
         if (error) throw error;
 
+        
+        // Notify the applicant
+        try {
+            const { data: appData } = await supabase.from('international_job_applications').select('applicant_id, job_id, status').eq('id', appId).single();
+            if (appData) {
+                const { data: job } = await supabase.from('international_jobs').select('title').eq('id', appData.job_id).single();
+                await notificationService.createNotification(
+                    appData.applicant_id,
+                    'INTL_STATUS_UPDATE',
+                    `Your application status for "${job?.title || 'International Job'}" has been updated to ${status}`,
+                    appData.job_id
+                );
+            }
+        } catch (notifyErr) { console.error('Notification failed:', notifyErr); }
         res.json({ success: true, data: data[0] });
     } catch (error) {
         console.error('Error updating application status:', error);

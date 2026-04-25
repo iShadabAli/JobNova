@@ -249,7 +249,8 @@ const NotificationBell = ({ language = 'en' }) => {
                                         <div style={{ fontSize: '1.2rem', marginTop: '2px' }}>
                                             {notification.type === 'NEW_APPLICANT' ? '👤' :
                                              notification.type === 'STATUS_UPDATE' ? 'ℹ️' : 
-                                             notification.type === 'COMPLAINT_UPDATE' ? '🛡️' : '🔔'}
+                                             notification.type === 'COMPLAINT_UPDATE' ? '🛡️' : 
+                                             notification.type === 'TE_HIRE_REQUEST' ? '✈️' : '🔔'}
                                         </div>
                                         <div style={{ flex: 1 }}>
                                             <p style={{

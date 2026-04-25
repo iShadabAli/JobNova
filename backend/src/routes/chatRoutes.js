@@ -137,8 +137,8 @@ router.post('/start', authenticateUser, async (req, res) => {
         
         const employer_id = employerProfile.id; // The profiles table UUID
 
-        if (!job_id || !candidate_id) {
-            return res.status(400).json({ success: false, message: 'Job ID and Candidate ID are required' });
+        if (!candidate_id) {
+            return res.status(400).json({ success: false, message: 'Candidate ID is required' });
         }
 
         // 2. Then get the candidate's profile ID
@@ -155,7 +155,7 @@ router.post('/start', authenticateUser, async (req, res) => {
         const candidate_profile_id = candidateProfile.id;
 
         // 3. Check if a session already exists
-        const { data: existingSession, error: checkError } = await supabaseAdmin
+        let query = supabaseAdmin
             .from('chat_sessions')
             .select(`
                 id,
@@ -167,10 +167,16 @@ router.post('/start', authenticateUser, async (req, res) => {
                 employer:profiles!chat_sessions_employer_id_fkey ( full_name, company_name ),
                 candidate:profiles!chat_sessions_candidate_id_fkey ( full_name )
             `)
-            .eq('job_id', job_id)
             .eq('employer_id', employer_id)
-            .eq('candidate_id', candidate_profile_id)
-            .single();
+            .eq('candidate_id', candidate_profile_id);
+
+        if (job_id) {
+            query = query.eq('job_id', job_id);
+        } else {
+            query = query.is('job_id', null);
+        }
+
+        const { data: existingSession, error: checkError } = await query.maybeSingle();
 
         if (existingSession) {
             return res.json({ session: existingSession });
@@ -180,7 +186,7 @@ router.post('/start', authenticateUser, async (req, res) => {
         const { data: newSession, error: createError } = await supabaseAdmin
             .from('chat_sessions')
             .insert([{
-                job_id,
+                job_id: job_id || null,
                 employer_id,
                 candidate_id: candidate_profile_id
             }])

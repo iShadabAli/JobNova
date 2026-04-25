@@ -9,12 +9,63 @@ import ComplaintModal from '../components/ComplaintModal';
 import ChatWidget from '../components/ChatWidget';
 
 const EmployerDashboard = ({ user, logout }) => {
+    const [hireModal, setHireModal] = useState({ show: false, workerId: null, teId: null, workerName: '', message: "I'm interested in hiring you for your travel period." });
+
+    const handleHireWorker = async () => {
+        try {
+            const token = sessionStorage.getItem('token');
+            const response = await fetch('http://localhost:5000/api/time-exchange/hire', {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ 
+                    worker_id: hireModal.workerId, 
+                    time_exchange_id: hireModal.teId,
+                    message: hireModal.message 
+                })
+            });
+            const result = await response.json();
+            if (result.success) {
+                toast.success(`Hire request sent to ${hireModal.workerName}!`, {
+                    icon: '🚀',
+                    style: { borderRadius: '15px', background: '#1e293b', color: '#fff' }
+                });
+                setHireModal({ ...hireModal, show: false });
+            } else {
+                toast.error(result.error || 'Failed to send hire request');
+            }
+        } catch (error) {
+            console.error('Error hiring worker:', error);
+            toast.error('Network error');
+        }
+    };
+
     const [activeView, _setActiveView] = useState(() => {
         const lastUser = sessionStorage.getItem('employer_lastUser');
         if (lastUser !== user?.id) { sessionStorage.setItem('employer_activeView', 'welcome'); sessionStorage.setItem('employer_lastUser', user?.id); return 'welcome'; }
         return sessionStorage.getItem('employer_activeView') || 'welcome';
     });
-    const setActiveView = (v) => { sessionStorage.setItem('employer_activeView', v); _setActiveView(v); window.history.pushState({ view: v }, ''); };
+    const fetchTravelers = async () => {
+        setLoadingTE(true);
+        try {
+            const url = teSearchCity 
+                ? 'http://localhost:5000/api/time-exchange?to_city=' + teSearchCity
+                : 'http://localhost:5000/api/time-exchange';
+            const res = await fetch(url);
+            const result = await res.json();
+            if (result.success) {
+                const filtered = result.data.filter(t => t.available_for_work);
+                setTeTravelers(filtered);
+                sessionStorage.setItem('te_travelers', JSON.stringify(filtered));
+                sessionStorage.setItem('te_search_city', teSearchCity);
+            }
+        } catch (err) { console.error('Error fetching travelers:', err); }
+        finally { setLoadingTE(false); }
+    };
+
+    const setActiveView = (v) => { sessionStorage.setItem('employer_activeView', v); _setActiveView(v); window.history.pushState({ view: v }, ''); if (v === 'time-exchange') fetchTravelers(); };
 
     useEffect(() => {
         const onBack = (e) => {
@@ -43,6 +94,10 @@ const EmployerDashboard = ({ user, logout }) => {
     });
 
     const [showComplaintModal, setShowComplaintModal] = useState(false);
+    const [teTravelers, setTeTravelers] = useState(() => { try { const saved = sessionStorage.getItem('te_travelers'); return saved ? JSON.parse(saved) : []; } catch { return []; } });
+    const [teSearchCity, setTeSearchCity] = useState(() => sessionStorage.getItem('te_search_city') || '');
+    const [teWorkerType, setTeWorkerType] = useState(() => sessionStorage.getItem('te_worker_type') || 'all');
+    const [loadingTE, setLoadingTE] = useState(false);
 
     // International Jobs State
     const [intlJob, setIntlJob] = useState({
@@ -528,10 +583,10 @@ const EmployerDashboard = ({ user, logout }) => {
                                 <h3>Book Workers</h3>
                                 <p>Coming soon: Schedule and book workers</p>
                             </div>
-                            <div className="wc-dash-card disabled" onClick={() => toast('Time Exchange Explorer coming soon!')}>
+                            <div className="wc-dash-card" onClick={() => setActiveView('time-exchange')}>
                                 <div className="wc-dash-card-icon">✈️</div>
-                                <h3>Time Exchange</h3>
-                                <p>Coming soon: Explore freelancer availability</p>
+                                <h3>Time Exchange Explorer</h3>
+                                <p>Explore skilled workers traveling to your city</p>
                             </div>
 
                             <div className="wc-dash-card" onClick={() => { fetchMyIntlJobs(); setActiveView('my-international-jobs'); }}>
@@ -544,6 +599,101 @@ const EmployerDashboard = ({ user, logout }) => {
                                 <h3>Post International Job</h3>
                                 <p>Create overseas job opportunities</p>
                             </div>
+                        </div>
+                    </section>
+                )}
+
+                {/* -------------------- TIME EXCHANGE EXPLORER VIEW -------------------- */}
+                {activeView === 'time-exchange' && (
+                    <section style={{ padding: '0' }}>
+                        <div style={{ background: 'linear-gradient(135deg, #0f172a 0%, #334155 100%)', padding: '3rem 2rem', borderRadius: '24px', marginBottom: '2rem', textAlign: 'center' }}>
+                            <h1 style={{ fontSize: '2.2rem', color: '#fff', fontWeight: 800 }}>✈️ Time Exchange Explorer</h1>
+                            <p style={{ color: '#94a3b8' }}>Discover skilled workers traveling to your city for short-term tasks</p>
+                        </div>
+
+                        <div className="te-explorer-content" style={{ maxWidth: '1000px', margin: '0 auto' }}>
+                            <div style={{ background: '#fff', padding: '1.5rem', borderRadius: '16px', display: 'flex', gap: '1rem', marginBottom: '2rem', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}>
+                                <input 
+                                    type="text" 
+                                    placeholder="Search by city (e.g. Lahore)..." 
+                                    value={teSearchCity}
+                                    onChange={e => setTeSearchCity(e.target.value)}
+                                    style={{ flex: 1, padding: '12px', borderRadius: '8px', border: '1px solid #e2e8f0' }}
+                                />
+                                <select 
+                                    value={teWorkerType}
+                                    onChange={e => { setTeWorkerType(e.target.value); sessionStorage.setItem('te_worker_type', e.target.value); }}
+                                    style={{ padding: '12px', borderRadius: '8px', border: '1px solid #e2e8f0', background: '#fff', outline: 'none' }}
+                                >
+                                    <option value="all">All Worker Types</option>
+                                    <option value="blue_collar">Blue-Collar (Skilled Worker)</option>
+                                    <option value="white_collar">White-Collar (Professional)</option>
+                                </select>
+                                <button onClick={fetchTravelers} className="btn btn-primary" style={{ padding: '0 2rem' }}>Search</button>
+                            </div>
+
+                            {loadingTE ? (
+                                <div style={{ textAlign: 'center', padding: '3rem', color: '#64748b' }}>Searching for travelers...</div>
+                            ) : teTravelers.length === 0 ? (
+                                <div style={{ textAlign: 'center', padding: '3rem', background: '#f8fafc', borderRadius: '16px', color: '#64748b' }}>
+                                    No travelers found for this city. Try a different search.
+                                </div>
+                            ) : (
+                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1.5rem' }}>
+                                    {teTravelers.filter(trav => teWorkerType === 'all' || trav.user?.role === teWorkerType).map(trav => (
+                                        <div key={trav.id} style={{ background: '#fff', padding: '1.5rem', borderRadius: '20px', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)', transition: 'transform 0.2s' }} onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-5px)'} onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}>
+                                            <div style={{ display: 'flex', gap: '15px', marginBottom: '1rem' }}>
+                                                <div style={{ width: '60px', height: '60px', borderRadius: '15px', background: '#4f46e5', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem', fontWeight: 700 }}>
+                                                    {trav.user?.profile_picture ? <img src={trav.user.profile_picture} alt="Profile" style={{width:'100%', height:'100%', borderRadius:'15px', objectFit:'cover'}} /> : trav.user?.full_name?.charAt(0)}
+                                                </div>
+                                                <div>
+                                                    <h3 style={{ margin: 0, fontSize: '1.1rem', color: '#1e293b' }}>{trav.user?.full_name}</h3>
+                                                    <span style={{ fontSize: '0.8rem', background: '#e0e7ff', color: '#4338ca', padding: '2px 8px', borderRadius: '10px', display: 'inline-block', marginTop: '4px' }}>
+                                                        {trav.user?.role === 'blue_collar' ? 'Skilled Worker' : 'Professional'}
+                                                    </span>
+                                                </div>
+                                            </div>
+
+                                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '1.5rem', fontSize: '0.9rem' }}>
+                                                <div style={{ color: '#64748b' }}>From: <span style={{ color: '#1e293b', fontWeight: 600 }}>{trav.from_city}</span></div>
+                                                <div style={{ color: '#64748b' }}>To: <span style={{ color: '#1e293b', fontWeight: 600 }}>{trav.to_city}</span></div>
+                                                <div style={{ color: '#64748b', gridColumn: 'span 2' }}>
+                                                    Dates: <span style={{ color: '#1e293b', fontWeight: 600 }}>{new Date(trav.travel_date_start).toLocaleDateString()} - {new Date(trav.travel_date_end).toLocaleDateString()}</span>
+                                                </div>
+                                            </div>
+
+                                            {trav.skills && (
+                                                <div style={{ marginBottom: '1.5rem' }}>
+                                                    <p style={{ margin: '0 0 5px 0', fontSize: '0.85rem', color: '#64748b' }}>Skills:</p>
+                                                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px' }}>
+                                                        {(Array.isArray(trav.skills) ? trav.skills : String(trav.skills).split(',')).map(s => (
+                                                            <span key={s} style={{ fontSize: '0.75rem', background: '#f1f5f9', color: '#475569', padding: '2px 8px', borderRadius: '6px' }}>{typeof s === 'string' ? s.trim() : s}</span>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                                <button onClick={() => navigate('/profile/' + trav.user_id)} className="btn btn-primary" style={{ width: '100%', borderRadius: '10px', padding: '10px', background: '#4f46e5' }}>
+                                                    👤 View Profile
+                                                </button>
+                                                <div style={{ display: 'flex', gap: '8px' }}>
+                                                    <button onClick={() => {
+                                                        const token = sessionStorage.getItem('token');
+                                                        fetch('http://localhost:5000/api/chat/start', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify({ job_id: null, candidate_id: trav.user_id }) })
+                                                        .then(r => r.json()).then(data => { if (data.session) { window.dispatchEvent(new CustomEvent('open-chat', { detail: { session: data.session } })); } })
+                                                    }} className="btn" style={{ flex: 1, borderRadius: '10px', padding: '10px', background: '#3b82f6', color: '#fff', border: 'none', fontWeight: 600 }}>
+                                                        💬 Message
+                                                    </button>
+                                                    <button onClick={() => setHireModal({ show: true, workerId: trav.user_id, teId: trav.id, workerName: trav.user?.first_name || 'Worker', message: "I'm interested in hiring you for your travel period." })} className="btn" style={{ flex: 1, borderRadius: '10px', padding: '10px', background: '#10b981', color: '#fff', border: 'none', fontWeight: 600 }}>
+                                                        💼 Send Request
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
                         </div>
                     </section>
                 )}
@@ -789,6 +939,24 @@ const EmployerDashboard = ({ user, logout }) => {
                                                                 onClick={() => navigate(`/profile/${app.applicant_id}`)}
                                                             >
                                                                 👤 View Profile
+                                                            </button>
+                                                            <button 
+                                                                className="btn"
+                                                                style={{ padding: '6px 12px', fontSize: '0.8rem', background: '#3b82f6', color: '#fff', border: 'none', borderRadius: '8px', fontWeight: 600 }}
+                                                                onClick={() => {
+                                                                    const token = sessionStorage.getItem('token');
+                                                                    fetch('http://localhost:5000/api/chat/start', {
+                                                                        method: 'POST',
+                                                                        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                                                                        body: JSON.stringify({ job_id: null, candidate_id: app.applicant_id })
+                                                                    }).then(r => r.json()).then(data => {
+                                                                        if (data.session) {
+                                                                            window.dispatchEvent(new CustomEvent('open-chat', { detail: { session: data.session } }));
+                                                                        }
+                                                                    });
+                                                                }}
+                                                            >
+                                                                💬 Message
                                                             </button>
                                                             {app.status === 'pending' && (
                                                                 <>
@@ -1129,6 +1297,7 @@ const EmployerDashboard = ({ user, logout }) => {
                                                 <td>
                                                     <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
                                                         {/* Profile / Contact actions */}
+                                                        <button className="btn btn-secondary btn-sm" style={{ padding: '6px 12px', fontSize: '0.8rem', background: '#e0f2fe', color: '#0369a1', border: 'none' }} onClick={() => navigate(`/profile/${app.applicant_id}`)}>👤 View Profile</button>
                                                         {hiringMode === 'white' && (
                                                             <button
                                                                 className="btn btn-primary btn-sm"
@@ -1239,6 +1408,48 @@ const EmployerDashboard = ({ user, logout }) => {
                 onClose={() => setShowComplaintModal(false)}
                 type="general"
             />
+
+            {/* Hire Request Modal */}
+            {hireModal.show && (
+                <div className="modal-overlay" style={{ zIndex: 2000 }}>
+                    <div className="modal-content" style={{ maxWidth: '500px', borderRadius: '30px', padding: '2rem' }}>
+                        <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
+                            <div style={{ background: '#ecfdf5', width: '70px', height: '70px', borderRadius: '25px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '2.5rem', margin: '0 auto 15px' }}>🚀</div>
+                            <h2 style={{ fontSize: '1.8rem', fontWeight: 800, color: '#1e293b', marginBottom: '5px' }}>Hire {hireModal.workerName}</h2>
+                            <p style={{ color: '#64748b' }}>Send a professional work invitation for their travel period.</p>
+                        </div>
+
+                        <div className="form-group" style={{ marginBottom: '1.5rem' }}>
+                            <label style={{ fontWeight: 700, color: '#475569', display: 'block', marginBottom: '8px' }}>Your Message</label>
+                            <textarea 
+                                className="form-input"
+                                rows="4"
+                                value={hireModal.message}
+                                onChange={(e) => setHireModal({ ...hireModal, message: e.target.value })}
+                                style={{ borderRadius: '15px', padding: '12px', border: '2px solid #f1f5f9', width: '100%', outline: 'none' }}
+                                placeholder="Write a short message about the work..."
+                            />
+                        </div>
+
+                        <div style={{ display: 'flex', gap: '12px' }}>
+                            <button 
+                                onClick={() => setHireModal({ ...hireModal, show: false })}
+                                className="btn"
+                                style={{ flex: 1, padding: '12px', borderRadius: '15px', background: '#f1f5f9', color: '#475569', border: 'none', fontWeight: 700 }}
+                            >
+                                Cancel
+                            </button>
+                            <button 
+                                onClick={handleHireWorker}
+                                className="btn btn-primary"
+                                style={{ flex: 1, padding: '12px', borderRadius: '15px', background: '#10b981', color: '#fff', border: 'none', fontWeight: 700, boxShadow: '0 8px 16px rgba(16,185,129,0.2)' }}
+                            >
+                                Send Offer
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Chat Box Overlay */}
             <ChatWidget currentUser={user} />

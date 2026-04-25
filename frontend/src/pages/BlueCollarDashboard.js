@@ -99,7 +99,20 @@ const translations = {
         card_time_exchange: 'Time Exchange',
         card_time_exchange_desc: 'Coming soon: Freelance availability',
         card_schedule: 'My Schedule',
-        card_schedule_desc: 'Set your availability & work hours'
+        card_schedule_desc: 'Set your availability & work hours',
+        te_header: 'Time Exchange ✈️',
+        te_subtitle: 'Travel and Work Explorer',
+        te_announce_btn: 'Announce My Travel',
+        te_from_label: 'From City',
+        te_to_label: 'To City',
+        te_start_label: 'Start Date',
+        te_end_label: 'End Date',
+        te_available_check: 'Available for work during travel?',
+        te_post_btn: 'Post Travel Announcement',
+        te_my_announcements: 'My Travel Announcements 📋',
+        te_no_announcements: "You haven't posted any travel plans yet.",
+        te_networking: 'Travelers to my Destination 🌍',
+        te_no_networking: 'No other travelers found for your destination yet.',
     },
     ur: {
         toggle_lang: 'English',
@@ -148,6 +161,19 @@ const translations = {
         alert_offer_accepted: 'آپ نے کام قبول کر لیا ہے!',
         alert_offer_rejected: 'آپ نے کام مسترد کر دیا ہے۔',
         alert_offer_fail: 'سٹیٹس اپ ڈیٹ کرنے میں مسٔلہ پیش آیا',
+        te_header: 'ٹائم ایکسچینج (Time Exchange) ✈️',
+        te_subtitle: 'سفر اور کام کی معلومات',
+        te_announce_btn: 'اپنے سفر کا اعلان کریں',
+        te_from_label: 'کس شہر سے',
+        te_to_label: 'کس شہر کو',
+        te_start_label: 'روانگی کی تاریخ',
+        te_end_label: 'واپسی کی تاریخ',
+        te_available_check: 'کیا آپ دورانِ سفر کام کے لیے دستیاب ہیں؟',
+        te_post_btn: 'سفر کا اعلان پوسٹ کریں',
+        te_my_announcements: 'میرے سفر کے اعلانات 📋',
+        te_no_announcements: 'آپ نے ابھی تک سفر کا کوئی اعلان نہیں کیا۔',
+        te_networking: 'میرے شہر آنے والے دیگر مسافر 🌍',
+        te_no_networking: 'آپ کی منزل کے لیے ابھی کوئی اور مسافر نہیں ملا۔',
         feedback_from: 'آجر کی طرف سے فیڈبیک',
         rate_employer_title: 'آجر کو ریٹنگ دیں',
         rate_employer_subtitle: 'آپ کا کام کرنے کا تجربہ کیسا رہا؟',
@@ -201,19 +227,93 @@ const BlueCollarDashboard = ({ user, logout }) => {
     const t = (key) => translations[language][key] || key;
 
     // --- State: General ---
-    const [activeTab, setActiveTab] = useState('welcome');
+    const [activeTab, _setActiveTab] = useState('welcome');
     // Handle Back Button
     useEffect(() => {
         const handlePopState = () => {
             const hash = window.location.hash.replace('#', '') || 'welcome';
-            setActiveTab(hash);
+            _setActiveTab(hash);
         };
         window.addEventListener('popstate', handlePopState);
         return () => window.removeEventListener('popstate', handlePopState);
     }, []);
 
+        const fetchMyTravel = async () => {
+        try {
+            const res = await fetch(`http://localhost:5000/api/time-exchange/user/${user.id}`);
+            const result = await res.json();
+            if (result.success) setTravelAnnouncements(result.data);
+        } catch (err) { console.error('Error fetching travel:', err); }
+    };
+
+    const fetchNetworking = async (toCity) => {
+        if (!toCity) return;
+        try {
+            const res = await fetch(`http://localhost:5000/api/time-exchange?to_city=${toCity}`);
+            const result = await res.json();
+            if (result.success) {
+                // Filter out current user
+                setNetworkingTravelers(result.data.filter(t => t.user_id !== user.id));
+            }
+        } catch (err) { console.error('Error fetching networking:', err); }
+    };
+
+    const handlePostTravel = async (e) => {
+        e.preventDefault();
+        setLoadingTE(true);
+        try {
+            const res = await fetch('http://localhost:5000/api/time-exchange', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ ...travelForm, user_id: user.id })
+            });
+            const result = await res.json();
+            if (result.success) {
+                toast.success('Travel announcement posted!');
+                setTravelForm({ from_city: '', to_city: '', travel_date_start: '', travel_date_end: '', available_for_work: true, skills: user?.skills || '' });
+                fetchMyTravel();
+            } else { toast.error(result.error); }
+        } catch (err) { toast.error('Connection error'); }
+        finally { setLoadingTE(false); }
+    };
+
+        const handleDeleteTravel = async (id) => {
+        toast((t) => (
+            <div style={{ textAlign: 'center' }}>
+                <p style={{ margin: '0 0 12px 0', fontWeight: 600, color: '#1e293b' }}>
+                    {language === 'ur' ? 'کیا آپ اس اعلان کو حذف کرنا چاہتے ہیں؟' : 'Delete this travel announcement?'}
+                </p>
+                <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
+                    <button 
+                        onClick={async () => {
+                            toast.dismiss(t.id);
+                            try {
+                                const res = await fetch(`http://localhost:5000/api/time-exchange/${id}`, { method: 'DELETE' });
+                                const result = await res.json();
+                                if (result.success) {
+                                    toast.success(language === 'ur' ? 'حذف کر دیا گیا' : 'Deleted successfully');
+                                    fetchMyTravel();
+                                }
+                            } catch (err) { toast.error('Error deleting'); }
+                        }}
+                        style={{ background: '#ef4444', color: '#fff', border: 'none', padding: '8px 16px', borderRadius: '10px', cursor: 'pointer', fontWeight: 600, fontSize: '0.85rem' }}
+                    >
+                        {language === 'ur' ? 'ہاں، حذف کریں' : 'Yes, Delete'}
+                    </button>
+                    <button 
+                        onClick={() => toast.dismiss(t.id)}
+                        style={{ background: '#f1f5f9', color: '#475569', border: '1px solid #e2e8f0', padding: '8px 16px', borderRadius: '10px', cursor: 'pointer', fontWeight: 600, fontSize: '0.85rem' }}
+                    >
+                        {language === 'ur' ? 'منسوخ کریں' : 'Cancel'}
+                    </button>
+                </div>
+            </div>
+        ), { duration: 6000, position: 'top-center', style: { borderRadius: '20px', padding: '16px', boxShadow: '0 10px 25px rgba(0,0,0,0.1)' } });
+    };
+
     const handleTabChange = (tab) => {
-        setActiveTab(tab);
+        _setActiveTab(tab);
+        if (tab === 'time-exchange') { fetchMyTravel(); fetchTERequests(); }
         window.history.pushState(null, '', `#${tab}`);
     }; // 'welcome', 'find-jobs', 'my-jobs', 'my-ratings'
     const [profileName, setProfileName] = useState('');
@@ -259,6 +359,60 @@ const BlueCollarDashboard = ({ user, logout }) => {
 
     // --- State: Support Modal ---
     const [showComplaintModal, setShowComplaintModal] = useState(false);
+    const [travelAnnouncements, setTravelAnnouncements] = useState([]);
+    const [networkingTravelers, setNetworkingTravelers] = useState([]);
+    const [teRequests, setTERequests] = useState([]);
+    const [loadingTERequests, setLoadingTERequests] = useState(false);
+    const [loadingTE, setLoadingTE] = useState(false);
+
+    const fetchTERequests = useCallback(async () => {
+        if (!user?.id) return;
+        setLoadingTERequests(true);
+        try {
+            const res = await fetch(`http://localhost:5000/api/time-exchange/requests/${user.id}`);
+            const result = await res.json();
+            if (result.success) setTERequests(result.data);
+        } catch (err) { console.error('Error fetching TE requests:', err); }
+        finally { setLoadingTERequests(false); }
+    }, [user?.id]);
+
+    useEffect(() => {
+        if (activeTab === 'time-exchange') {
+            fetchMyTravel();
+            fetchTERequests();
+        }
+    }, [activeTab, fetchTERequests]);
+
+    const handleTERequestStatus = async (requestId, status) => {
+        try {
+            const res = await fetch(`http://localhost:5000/api/time-exchange/requests/${requestId}/status`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ status })
+            });
+            const result = await res.json();
+            if (result.success) {
+                const msg = status === 'Accepted' 
+                    ? (language === 'ur' ? 'پیشکش قبول کر لی گئی! 🤝' : 'Offer Accepted! 🤝')
+                    : (language === 'ur' ? 'پیشکش مسترد کر دی گئی' : 'Offer Declined');
+                
+                toast.success(msg, {
+                    duration: 4000,
+                    icon: status === 'Accepted' ? '✅' : '❌',
+                    style: { borderRadius: '15px', background: '#1e293b', color: '#fff', fontWeight: 600 }
+                });
+                fetchTERequests();
+            }
+        } catch (err) { toast.error(language === 'ur' ? 'سٹیٹس اپ ڈیٹ کرنے میں مسٔلہ پیش آیا' : 'Error updating status'); }
+    };
+    const [travelForm, setTravelForm] = useState({
+        from_city: '',
+        to_city: '',
+        travel_date_start: '',
+        travel_date_end: '',
+        available_for_work: true,
+        skills: user?.skills || ''
+    });
 
     // Fetch Profile Date for Availability
     useEffect(() => {
@@ -342,10 +496,33 @@ const BlueCollarDashboard = ({ user, logout }) => {
         setFilteredIntlJobs(result);
     }, [intlSearchTerm, intlJobs]);
 
+    const handleApplyIntlJob = async (jobId) => {
+        try {
+            const token = sessionStorage.getItem('token');
+            const response = await fetch(`http://localhost:5000/api/international-jobs/${jobId}/apply`, {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ applicant_id: user.id })
+            });
+            const result = await response.json();
+            if (result.success) {
+                toast.success(language === 'ur' ? 'درخواست کامیابی کے ساتھ بھیجی گئی!' : 'Successfully applied for international job!');
+            } else {
+                toast.error(result.error || (language === 'ur' ? 'درخواست دینے میں ناکامی' : 'Failed to apply'));
+            }
+        } catch (error) {
+            console.error('Error applying for intl job:', error);
+            toast.error('Network error. Please try again.');
+        }
+    };
+
     const fetchJobs = useCallback(async (overrideSearchTerm) => {
         const termToUse = typeof overrideSearchTerm === 'string' ? overrideSearchTerm : searchTerm;
         setLoadingJobs(true);
-        setIsSearchingAI(!!termToUse); // Show AI processing state if there's a search term
+        setIsSearchingAI(!!termToUse);
         try {
             const token = sessionStorage.getItem('token');
 
@@ -659,7 +836,7 @@ const BlueCollarDashboard = ({ user, logout }) => {
         }
 
         // Ensure we're on the find-jobs tab to show results
-        setActiveTab('find-jobs');
+        handleTabChange('find-jobs');
     }, [fetchJobs]);
 
     return (
@@ -783,14 +960,198 @@ const BlueCollarDashboard = ({ user, logout }) => {
                                 <h3>{t('card_international')}</h3>
                                 <p>{t('card_international_desc')}</p>
                             </div>
-                            <div className="wc-dash-card disabled" onClick={() => toast(language === 'ur' ? 'جلد آ رہا ہے!' : 'Time Exchange coming soon!')}>
+                            <div className="wc-dash-card" onClick={() => handleTabChange('time-exchange')}>
                                 <div className="wc-dash-card-icon">✈️</div>
                                 <h3>{t('card_time_exchange')}</h3>
-                                <p>{t('card_time_exchange_desc')}</p>
+                                <p>{language === 'ur' ? 'دیگر شہروں میں سفر اور کام کریں' : 'Travel and work in other cities'}</p>
                             </div>
                         </div>
                     </section>
                 )}
+
+                                {/* --- Time Exchange Tab --- */}
+                {activeTab === 'time-exchange' && (
+                    <section className="wc-welcome-section">
+                        <div className="wc-welcome-hero" style={{ background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)' }}>
+                            <h1>{t('te_header')}</h1>
+                            <p>{t('te_subtitle')}</p>
+                        </div>
+
+                        <div className="te-container" style={{ padding: '2rem', maxWidth: '1200px', margin: '0 auto', display: 'grid', gridTemplateColumns: '1fr 1.5fr', gap: '2rem' }}>
+                            {/* Left: Post Travel Form */}
+                            <div className="bc-search-section" style={{ padding: '2rem', borderRadius: '24px', height: 'fit-content' }}>
+                                <h2 style={{ color: '#fff', marginBottom: '1.5rem', fontSize: '1.5rem' }}>{t('te_announce_btn')}</h2>
+                                <form onSubmit={handlePostTravel} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                                    <div className="form-group">
+                                        <label style={{ color: '#fff', fontSize: '0.9rem', marginBottom: '5px', display: 'block' }}>{t('te_from_label')}</label>
+                                        <input type="text" required placeholder="e.g. Karachi" value={travelForm.from_city} onChange={e => setTravelForm({...travelForm, from_city: e.target.value})} style={{ width: '100%', padding: '10px', borderRadius: '8px', border: 'none' }} />
+                                    </div>
+                                    <div className="form-group">
+                                        <label style={{ color: '#fff', fontSize: '0.9rem', marginBottom: '5px', display: 'block' }}>{t('te_to_label')}</label>
+                                        <input type="text" required placeholder="e.g. Lahore" value={travelForm.to_city} onChange={e => setTravelForm({...travelForm, to_city: e.target.value})} style={{ width: '100%', padding: '10px', borderRadius: '8px', border: 'none' }} />
+                                    </div>
+                                    <div style={{ display: 'flex', gap: '1rem' }}>
+                                        <div className="form-group" style={{ flex: 1 }}>
+                                            <label style={{ color: '#fff', fontSize: '0.9rem', marginBottom: '5px', display: 'block' }}>{t('te_start_label')}</label>
+                                            <input type="date" required value={travelForm.travel_date_start} onChange={e => setTravelForm({...travelForm, travel_date_start: e.target.value})} style={{ width: '100%', padding: '10px', borderRadius: '8px', border: 'none' }} />
+                                        </div>
+                                        <div className="form-group" style={{ flex: 1 }}>
+                                            <label style={{ color: '#fff', fontSize: '0.9rem', marginBottom: '5px', display: 'block' }}>{t('te_end_label')}</label>
+                                            <input type="date" required value={travelForm.travel_date_end} onChange={e => setTravelForm({...travelForm, travel_date_end: e.target.value})} style={{ width: '100%', padding: '10px', borderRadius: '8px', border: 'none' }} />
+                                        </div>
+                                    </div>
+                                    <div className="form-group" style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 0' }}>
+                                        <input type="checkbox" id="te_avail" checked={travelForm.available_for_work} onChange={e => setTravelForm({...travelForm, available_for_work: e.target.checked})} style={{ width: '18px', height: '18px' }} />
+                                        <label htmlFor="te_avail" style={{ color: '#fff', cursor: 'pointer' }}>{t('te_available_check')}</label>
+                                    </div>
+                                    <button type="submit" disabled={loadingTE} className="btn btn-primary" style={{ padding: '12px', fontWeight: 600 }}>
+                                        {loadingTE ? t('btn_saving') : t('te_post_btn')}
+                                    </button>
+                                </form>
+                            </div>
+
+                            {/* Right: Lists */}
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+                                {/* My Announcements */}
+                                <div style={{ background: '#fff', borderRadius: '24px', padding: '1.5rem', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}>
+                                    <h2 style={{ fontSize: '1.25rem', fontWeight: 700, marginBottom: '1rem', color: '#1e293b' }}>{t('te_my_announcements')}</h2>
+                                    {travelAnnouncements.length === 0 ? (
+                                        <p style={{ color: '#64748b' }}>{t('te_no_announcements')}</p>
+                                    ) : (
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                                            {travelAnnouncements.map(ann => (
+                                                <div key={ann.id} style={{ padding: '1rem', border: '1px solid #e2e8f0', borderRadius: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                    <div>
+                                                        <div style={{ fontWeight: 600, color: '#1e293b' }}>{ann.from_city} ➔ {ann.to_city}</div>
+                                                        <div style={{ fontSize: '0.85rem', color: '#64748b' }}>{new Date(ann.travel_date_start).toLocaleDateString()} to {new Date(ann.travel_date_end).toLocaleDateString()}</div>
+                                                        {ann.available_for_work && <span style={{ fontSize: '0.75rem', background: '#dcfce7', color: '#166534', padding: '2px 8px', borderRadius: '10px', marginTop: '4px', display: 'inline-block' }}>Available for Work</span>}
+                                                    </div>
+                                                    <div style={{ display: 'flex', gap: '8px' }}>
+                                                        <button onClick={() => fetchNetworking(ann.to_city)} className="btn btn-outline-primary" style={{ padding: '4px 10px', fontSize: '0.8rem' }}>Find Others</button>
+                                                        <button onClick={() => handleDeleteTravel(ann.id)} style={{ color: '#ef4444', background: 'none', border: 'none', cursor: 'pointer' }}>
+                                                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 6h18m-2 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Networking View */}
+                                <div style={{ background: '#fff', borderRadius: '24px', padding: '1.5rem', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}>
+                                    <h2 style={{ fontSize: '1.25rem', fontWeight: 700, marginBottom: '1rem', color: '#1e293b' }}>{t('te_networking')}</h2>
+                                    {networkingTravelers.length === 0 ? (
+                                        <p style={{ color: '#64748b' }}>{t('te_no_networking')}</p>
+                                    ) : (
+                                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                                            {networkingTravelers.map(trav => (
+                                                <div key={trav.id} style={{ padding: '1rem', border: '1px solid #e2e8f0', borderRadius: '12px' }}>
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
+                                                        <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: '#4f46e5', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '0.8rem' }}>
+                                                            {trav.user?.profile_picture ? <img src={trav.user.profile_picture} alt="Profile" style={{width:'100%', height:'100%', borderRadius:'50%'}} /> : trav.user?.full_name?.charAt(0)}
+                                                        </div>
+                                                        <div style={{ fontWeight: 600, fontSize: '0.9rem' }}>{trav.user?.full_name}</div>
+                                                    </div>
+                                                    <div style={{ fontSize: '0.8rem', color: '#64748b' }}>Arriving from: {trav.from_city}</div>
+                                                    <div style={{ fontSize: '0.8rem', color: '#64748b' }}>Dates: {new Date(trav.travel_date_start).toLocaleDateString()}</div>
+                                                    <button onClick={() => navigate(`/profile/${trav.user_id}`)} className="btn btn-primary" style={{ width: '100%', marginTop: '10px', padding: '5px', fontSize: '0.8rem' }}>View Profile</button>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* -------------------- TIME EXCHANGE HIRE REQUESTS -------------------- */}
+                        <div style={{ marginTop: '3rem', background: 'rgba(255,255,255,0.02)', padding: '2rem', borderRadius: '30px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                            <h2 style={{ fontSize: '1.8rem', color: '#f8fafc', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                💼 {language === 'ur' ? 'کام کی درخواستیں' : 'Work Hire Requests'} 
+                                {teRequests.filter(r => r.status === 'Pending').length > 0 && (
+                                    <span style={{ fontSize: '0.8rem', background: '#ef4444', color: 'white', padding: '4px 12px', borderRadius: '20px', fontWeight: 800 }}>
+                                        {teRequests.filter(r => r.status === 'Pending').length} NEW
+                                    </span>
+                                )}
+                            </h2>
+
+                            {loadingTERequests ? (
+                                <div style={{ textAlign: 'center', padding: '2rem' }}>
+                                    <div className="loading-spinner"></div>
+                                </div>
+                            ) : teRequests.length > 0 ? (
+                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: '1.5rem' }}>
+                                    {teRequests.map(req => (
+                                        <div key={req.id} style={{ background: 'linear-gradient(135deg, rgba(30,41,59,0.7) 0%, rgba(15,23,42,0.8) 100%)', padding: '2rem', borderRadius: '30px', border: '1px solid rgba(255,255,255,0.08)', boxShadow: '0 20px 40px rgba(0,0,0,0.3)', backdropFilter: 'blur(12px)', position: 'relative', overflow: 'hidden' }}>
+                                            <div style={{ position: 'absolute', top: 0, right: 0, padding: '8px 16px', background: req.status === 'Pending' ? '#f59e0b' : req.status === 'Accepted' ? '#10b981' : '#ef4444', color: '#fff', fontSize: '0.7rem', fontWeight: 900, borderBottomLeftRadius: '20px', letterSpacing: '1px' }}>{req.status.toUpperCase()}</div>
+                                            
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '1.5rem' }}>
+                                                <div style={{ width: '60px', height: '60px', borderRadius: '18px', background: 'linear-gradient(135deg, #4f46e5, #7c3aed)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.8rem', color: 'white', boxShadow: '0 10px 20px rgba(79,70,229,0.3)' }}>
+                                                    {req.employer?.first_name?.charAt(0) || '🏢'}
+                                                </div>
+                                                <div>
+                                                    <h3 style={{ margin: 0, color: '#f8fafc', fontSize: '1.3rem', fontWeight: 800 }}>{req.employer?.first_name} {req.employer?.last_name}</h3>
+                                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                                        <p style={{ margin: 0, color: '#94a3b8', fontSize: '0.9rem', fontWeight: 500 }}>Potential Employer</p>
+                                                        <button 
+                                                            onClick={() => navigate(`/profile/${req.employer_id}`)}
+                                                            style={{ background: 'none', border: 'none', color: '#818cf8', fontSize: '0.8rem', padding: 0, cursor: 'pointer', textAlign: 'left', fontWeight: 600, textDecoration: 'underline' }}
+                                                        >
+                                                            {language === 'ur' ? 'آجر کی پروفائل دیکھیں' : 'View Employer Profile'}
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div style={{ background: 'rgba(255,255,255,0.03)', borderRadius: '20px', padding: '15px', marginBottom: '1.5rem', border: '1px solid rgba(255,255,255,0.05)' }}>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', color: '#cbd5e1', fontSize: '1rem', fontWeight: 600 }}>
+                                                    <span style={{ fontSize: '1.2rem' }}>📍</span> {req.travel?.from_city}
+                                                    <span style={{ color: '#64748b' }}>➔</span>
+                                                    <span style={{ fontSize: '1.2rem' }}>🎯</span> {req.travel?.to_city}
+                                                </div>
+                                            </div>
+
+                                            <div style={{ position: 'relative', marginBottom: '2rem' }}>
+                                                <div style={{ position: 'absolute', left: '-10px', top: '0', bottom: '0', width: '4px', background: '#4f46e5', borderRadius: '2px' }}></div>
+                                                <p style={{ margin: 0, paddingLeft: '15px', color: '#e2e8f0', fontSize: '1rem', fontStyle: 'italic', lineHeight: '1.6' }}>
+                                                    "{req.message || "I'm interested in hiring you for your travel period."}"
+                                                </p>
+                                            </div>
+
+                                            {req.status === 'Pending' && (
+                                                <div style={{ display: 'flex', gap: '12px' }}>
+                                                    <button 
+                                                        onClick={() => handleTERequestStatus(req.id, 'Accepted')}
+                                                        style={{ flex: 2, padding: '14px', borderRadius: '18px', border: 'none', background: 'linear-gradient(135deg, #10b981, #059669)', color: 'white', fontWeight: 800, fontSize: '1rem', cursor: 'pointer', boxShadow: '0 10px 20px rgba(16,185,129,0.3)', transition: 'all 0.3s ease' }}
+                                                    >
+                                                        {language === 'ur' ? 'قبول کریں' : 'Accept Offer'}
+                                                    </button>
+                                                    <button 
+                                                        onClick={() => handleTERequestStatus(req.id, 'Rejected')}
+                                                        style={{ flex: 1, padding: '14px', borderRadius: '18px', border: '1px solid rgba(239,68,68,0.2)', background: 'rgba(239,68,68,0.05)', color: '#f87171', fontWeight: 800, fontSize: '1rem', cursor: 'pointer', transition: 'all 0.3s ease' }}
+                                                    >
+                                                        {language === 'ur' ? 'مسترد' : 'Decline'}
+                                                    </button>
+                                                </div>
+                                            )}
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : (
+                                <div style={{ textAlign: 'center', padding: '4rem 2rem', background: 'rgba(255,255,255,0.02)', borderRadius: '30px', border: '1px dashed rgba(255,255,255,0.1)' }}>
+                                    <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>💼</div>
+                                    <h3 style={{ color: '#94a3b8', margin: 0 }}>
+                                        {language === 'ur' ? 'ابھی تک کوئی درخواست نہیں ملی' : 'No hire requests yet.'}
+                                    </h3>
+                                    <p style={{ color: '#64748b', fontSize: '0.9rem', marginTop: '5px' }}>
+                                        {language === 'ur' ? 'اپنی پروفائل مکمل رکھیں تاکہ آجر آپ سے رابطہ کریں' : 'Keep your travel profile updated to attract employers!'}
+                                    </p>
+                                </div>
+                            )}
+                        </div>
+                    </section>
+                )}
+
 
                 {/* --- My Schedule Tab --- */}
                 {activeTab === 'my-schedule' && (
@@ -1034,7 +1395,10 @@ const BlueCollarDashboard = ({ user, logout }) => {
                                                     <span className="wc-location">{job.location}</span>
                                                 </div>
                                             </div>
-                                            <div className="wc-job-actions">
+                                            <div className="wc-job-actions" style={{ display: 'flex', gap: '8px' }}>
+                                                <button className="btn" onClick={() => navigate('/profile/' + job.employer_id)} style={{ padding: '0.75rem 1.2rem', background: '#e0f2fe', color: '#0369a1', border: 'none', borderRadius: '8px', fontWeight: 600, cursor: 'pointer' }}>
+                                                    👤 {language === 'ur' ? 'پروفائل' : 'View Profile'}
+                                                </button>
                                                 <button
                                                     className="btn btn-primary"
                                                     onClick={() => handleApply(job.id)}
@@ -1079,6 +1443,14 @@ const BlueCollarDashboard = ({ user, logout }) => {
                                         <div className="wc-job-main">
                                             <div className="wc-job-info">
                                                 <h3 style={{ fontSize: '1.2rem', color: '#1e293b' }}>{language === 'ur' && app.jobs?.titleUrdu ? app.jobs?.titleUrdu : (app.jobs?.title || t('unknown_job'))}</h3>
+                                                {app.jobs?.employer_id && (
+                                                    <div style={{ marginBottom: '6px', marginTop: '4px' }}>
+                                                        <button onClick={() => navigate('/profile/' + app.jobs.employer_id)} style={{ background: 'none', border: 'none', color: '#4f46e5', fontWeight: 600, fontSize: '0.85rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px', padding: 0 }}>
+                                                            <span style={{ background: '#e0e7ff', borderRadius: '50%', width: '20px', height: '20px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.7rem' }}>👤</span>
+                                                            {language === 'ur' ? 'آجر کی پروفائل دیکھیں' : 'View Employer Profile'}
+                                                        </button>
+                                                    </div>
+                                                )}
                                                 <p style={{ color: '#64748b', fontSize: '0.9rem' }}>
                                                     {app.jobs?.location} • {app.jobs?.hourly_rate || app.jobs?.salary_range}
                                                     {app.jobs?.duration && ` • ⏳ ${app.jobs.duration}`}
@@ -1207,75 +1579,186 @@ const BlueCollarDashboard = ({ user, logout }) => {
                 )}
                 {/* -------------------- INTERNATIONAL JOBS TAB -------------------- */}
                 {activeTab === 'international-jobs' && (
-                    <section className="bc-search-section">
-                        <div className="wc-welcome-hero" style={{ 
-                            background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)',
-                            padding: '3rem 2rem',
-                            borderRadius: '24px',
-                            marginBottom: '2rem',
+                    <section className="bc-search-section" style={{ padding: '1rem' }}>
+                        {/* Premium Hero Banner */}
+                        <div style={{ 
+                            background: 'linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #312e81 100%)',
+                            padding: '4rem 2rem',
+                            borderRadius: '30px',
+                            marginBottom: '2.5rem',
                             position: 'relative',
                             overflow: 'hidden',
-                            border: '1px solid rgba(255,255,255,0.05)'
+                            border: '1px solid rgba(255,255,255,0.08)',
+                            boxShadow: '0 20px 50px rgba(0,0,0,0.3)',
+                            textAlign: 'center'
                         }}>
-                            <div style={{ position: 'absolute', top: '-10%', right: '-10%', width: '300px', height: '300px', background: 'radial-gradient(circle, rgba(79,70,229,0.15) 0%, transparent 70%)', filter: 'blur(40px)' }}></div>
-                            <h1 style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>🌍 {language === 'ur' ? 'بیرونی نوکریاں' : 'Global Opportunities'}</h1>
-                            <p style={{ fontSize: '1.1rem', opacity: 0.8 }}>{language === 'ur' ? 'دنیا بھر میں ہنر مند افراد کے لیے بہترین مواقع' : 'Premium international roles for skilled professionals'}</p>
+                            {/* Decorative Elements */}
+                            <div style={{ position: 'absolute', top: '-20%', left: '-10%', width: '400px', height: '400px', background: 'radial-gradient(circle, rgba(79,70,229,0.2) 0%, transparent 70%)', filter: 'blur(60px)' }}></div>
+                            <div style={{ position: 'absolute', bottom: '-10%', right: '-5%', width: '300px', height: '300px', background: 'radial-gradient(circle, rgba(16,185,129,0.1) 0%, transparent 70%)', filter: 'blur(50px)' }}></div>
+                            
+                            <div style={{ position: 'relative', zIndex: 1 }}>
+                                <div style={{ display: 'inline-flex', padding: '12px', background: 'rgba(255,255,255,0.05)', borderRadius: '20px', marginBottom: '1.5rem', border: '1px solid rgba(255,255,255,0.1)' }}>
+                                    <span style={{ fontSize: '2.5rem' }}>🌍</span>
+                                </div>
+                                <h1 style={{ 
+                                    fontSize: '3rem', 
+                                    fontWeight: 800, 
+                                    marginBottom: '1rem', 
+                                    letterSpacing: '-1px',
+                                    background: 'linear-gradient(to right, #fff, #94a3b8)',
+                                    WebkitBackgroundClip: 'text',
+                                    WebkitTextFillColor: 'transparent'
+                                }}>
+                                    {language === 'ur' ? 'بیرونی روزگار کے مواقع' : 'Global Career Pathways'}
+                                </h1>
+                                <p style={{ fontSize: '1.2rem', color: '#94a3b8', maxWidth: '600px', margin: '0 auto 2.5rem' }}>
+                                    {language === 'ur' ? 'دنیا بھر میں بہترین تنخواہوں اور ویزا سپانسرشپ والی نوکریاں تلاش کریں' : 'Connect with high-paying international employers offering visa sponsorship and relocation support'}
+                                </p>
+
+                                {/* Modern Search Bar */}
+                                <div style={{ 
+                                    maxWidth: '800px', 
+                                    margin: '0 auto',
+                                    display: 'flex',
+                                    gap: '10px',
+                                    background: 'rgba(255,255,255,0.05)',
+                                    padding: '10px',
+                                    borderRadius: '20px',
+                                    backdropFilter: 'blur(20px)',
+                                    border: '1px solid rgba(255,255,255,0.1)',
+                                    boxShadow: '0 10px 30px rgba(0,0,0,0.2)'
+                                }}>
+                                    <div style={{ flex: 1, position: 'relative' }}>
+                                        <span style={{ position: 'absolute', left: '15px', top: '50%', transform: 'translateY(-50%)', opacity: 0.5 }}>🔍</span>
+                                        <input
+                                            type="text"
+                                            placeholder={language === 'ur' ? 'پیشہ یا ملک تلاش کریں...' : 'Search by job title or country...'}
+                                            value={intlSearchTerm}
+                                            onChange={(e) => setIntlSearchTerm(e.target.value)}
+                                            style={{ 
+                                                width: '100%', 
+                                                padding: '14px 14px 14px 45px', 
+                                                borderRadius: '14px', 
+                                                border: 'none', 
+                                                background: 'rgba(0,0,0,0.2)', 
+                                                color: 'white',
+                                                fontSize: '1rem',
+                                                outline: 'none'
+                                            }}
+                                        />
+                                    </div>
+                                    <button className="btn btn-primary" style={{ padding: '0 2rem', borderRadius: '14px', fontWeight: 600 }}>
+                                        {language === 'ur' ? 'تلاش کریں' : 'Search'}
+                                    </button>
+                                </div>
+                            </div>
                         </div>
 
-                        <div style={{ 
-                            display: 'flex', 
-                            gap: '1rem', 
-                            marginBottom: '2rem',
-                            background: 'rgba(255,255,255,0.03)',
-                            padding: '1rem',
-                            borderRadius: '20px',
-                            backdropFilter: 'blur(10px)',
-                            border: '1px solid rgba(255,255,255,0.05)'
-                        }}>
-                            <input
-                                type="text"
-                                placeholder={language === 'ur' ? 'نوکری تلاش کریں...' : 'Search international roles...'}
-                                value={intlSearchTerm}
-                                onChange={(e) => setIntlSearchTerm(e.target.value)}
-                                style={{ flex: 1, padding: '1rem', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(15,23,42,0.4)', color: 'white' }}
-                            />
-                        </div>
-
-                        <div className="bc-jobs-grid">
+                        {/* Results Grid */}
+                        <div className="bc-jobs-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: '1.5rem' }}>
                             {loadingIntlJobs ? (
-                                <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '4rem' }}>
-                                    <div className="loading-spinner" style={{ margin: '0 auto 1rem' }}></div>
-                                    <p style={{ color: '#94a3b8' }}>Finding global opportunities...</p>
+                                <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '5rem' }}>
+                                    <div className="loading-spinner" style={{ width: '50px', height: '50px', border: '4px solid rgba(255,255,255,0.1)', borderTopColor: '#4f46e5', borderRadius: '50%', animation: 'spin 1s linear infinite', margin: '0 auto 1.5rem' }}></div>
+                                    <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+                                    <p style={{ color: '#94a3b8', fontSize: '1.1rem' }}>{language === 'ur' ? 'نوکریاں تلاش کی جا رہی ہیں...' : 'Scouting international opportunities...'}</p>
                                 </div>
                             ) : filteredIntlJobs.length > 0 ? (
                                 filteredIntlJobs.map(job => (
                                     <div key={job.id} className="bc-job-card" style={{ 
-                                        background: 'rgba(30,41,59,0.4)',
-                                        border: '1px solid rgba(255,255,255,0.05)',
-                                        transition: 'all 0.3s ease'
-                                    }}>
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
-                                            <h3 style={{ margin: 0, color: '#f8fafc' }}>{job.title}</h3>
+                                        background: 'linear-gradient(145deg, rgba(30,41,59,0.7), rgba(15,23,42,0.8))',
+                                        border: '1px solid rgba(255,255,255,0.06)',
+                                        borderRadius: '24px',
+                                        padding: '1.8rem',
+                                        display: 'flex',
+                                        flexDirection: 'column',
+                                        gap: '1.2rem',
+                                        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                                        position: 'relative',
+                                        overflow: 'hidden',
+                                        boxShadow: '0 10px 20px rgba(0,0,0,0.1)'
+                                    }}
+                                    onMouseOver={e => { e.currentTarget.style.transform = 'translateY(-8px)'; e.currentTarget.style.borderColor = 'rgba(79,70,229,0.4)'; e.currentTarget.style.boxShadow = '0 20px 40px rgba(0,0,0,0.4)'; }}
+                                    onMouseOut={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)'; e.currentTarget.style.boxShadow = '0 10px 20px rgba(0,0,0,0.1)'; }}>
+                                        
+                                        {/* Top Accent Line */}
+                                        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '4px', background: 'linear-gradient(90deg, #4f46e5, #10b981)' }}></div>
+
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                                            <div>
+                                                <h3 style={{ margin: '0 0 5px 0', color: '#f8fafc', fontSize: '1.3rem', fontWeight: 700 }}>{job.title}</h3>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#64748b', fontSize: '0.85rem' }}>
+                                                    
+                                                    <span 
+                                                        onClick={(e) => { e.stopPropagation(); navigate(`/profile/${job.employer_id}`); }}
+                                                        style={{ cursor: 'pointer', color: '#818cf8', display: 'flex', alignItems: 'center', gap: '4px' }}
+                                                        title="View Employer Profile"
+                                                    >
+                                                        🏢 {job.employer ? `${job.employer.first_name} ${job.employer.last_name}` : 'Verified Employer'}
+                                                        <small style={{ opacity: 0.7, fontSize: '0.65rem' }}> (View Profile 👤)</small>
+                                                    </span>
+                                                </div>
+                                            </div>
                                             {job.visa_sponsored && (
-                                                <span style={{ background: 'rgba(16,185,129,0.15)', color: '#10b981', padding: '4px 10px', borderRadius: '20px', fontSize: '0.75rem', fontWeight: 600 }}>
-                                                    ✈️ Visa
+                                                <span style={{ 
+                                                    background: 'rgba(16,185,129,0.15)', 
+                                                    color: '#10b981', 
+                                                    padding: '6px 12px', 
+                                                    borderRadius: '12px', 
+                                                    fontSize: '0.75rem', 
+                                                    fontWeight: 700,
+                                                    border: '1px solid rgba(16,185,129,0.2)',
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    gap: '4px'
+                                                }}>
+                                                    ✈️ {language === 'ur' ? 'ویزہ اسپانسر' : 'Visa Sponsored'}
                                                 </span>
                                             )}
                                         </div>
-                                        <div style={{ display: 'flex', gap: '1rem', marginBottom: '1.5rem', color: '#94a3b8', fontSize: '0.9rem' }}>
-                                            <span>📍 {job.country}</span>
-                                            <span>💰 {job.currency} {job.salary}</span>
+
+                                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
+                                            <div style={{ background: 'rgba(255,255,255,0.05)', padding: '8px 12px', borderRadius: '12px', fontSize: '0.9rem', color: '#e2e8f0', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                                📍 {job.city ? `${job.city}, ` : ''}{job.country}
+                                            </div>
+                                            <div style={{ background: 'rgba(79,70,229,0.1)', padding: '8px 12px', borderRadius: '12px', fontSize: '0.9rem', color: '#818cf8', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                                💰 {job.currency} {job.salary}
+                                            </div>
                                         </div>
-                                        <p style={{ fontSize: '0.9rem', color: '#cbd5e1', marginBottom: '1.5rem', flex: 1 }}>{job.description}</p>
-                                        <button className="btn btn-primary" style={{ width: '100%' }} onClick={() => toast.success('Application sent!')}>
-                                            {language === 'ur' ? 'درخواست دیں' : 'Apply Now'}
+
+                                        <p style={{ fontSize: '0.95rem', color: '#94a3b8', lineHeight: 1.6, margin: 0, flex: 1 }}>
+                                            {job.description?.length > 120 ? job.description.substring(0, 120) + '...' : job.description}
+                                        </p>
+
+                                        <button 
+                                            className="btn btn-primary" 
+                                            style={{ 
+                                                width: '100%', 
+                                                padding: '14px', 
+                                                borderRadius: '16px', 
+                                                fontWeight: 700, 
+                                                fontSize: '1rem',
+                                                background: 'linear-gradient(135deg, #4f46e5 0%, #4338ca 100%)',
+                                                boxShadow: '0 4px 15px rgba(79,70,229,0.3)',
+                                                border: 'none'
+                                            }} 
+                                            onClick={() => handleApplyIntlJob(job.id)}
+                                        >
+                                            {language === 'ur' ? 'درخواست جمع کروائیں' : 'Apply Now'}
                                         </button>
                                     </div>
                                 ))
                             ) : (
-                                <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '4rem', background: 'rgba(255,255,255,0.02)', borderRadius: '24px' }}>
-                                    <span style={{ fontSize: '3rem', display: 'block', marginBottom: '1rem' }}>🌍</span>
-                                    <p style={{ color: '#94a3b8' }}>No international jobs found.</p>
+                                <div style={{ 
+                                    gridColumn: '1 / -1', 
+                                    textAlign: 'center', 
+                                    padding: '5rem 2rem', 
+                                    background: 'rgba(255,255,255,0.02)', 
+                                    borderRadius: '30px',
+                                    border: '1px dashed rgba(255,255,255,0.1)'
+                                }}>
+                                    <div style={{ fontSize: '4rem', marginBottom: '1.5rem' }}>🛸</div>
+                                    <h3 style={{ fontSize: '1.5rem', color: '#e2e8f0', marginBottom: '0.5rem' }}>{language === 'ur' ? 'کوئی نوکری نہیں ملی' : 'No Global Openings Found'}</h3>
+                                    <p style={{ color: '#64748b' }}>{language === 'ur' ? 'براہ کرم دوبارہ کوشش کریں یا اپنی تلاش کے الفاظ تبدیل کریں' : 'Check back soon! New international roles are posted daily.'}</p>
                                 </div>
                             )}
                         </div>
