@@ -19,8 +19,8 @@ const About = () => {
         <div className="public-page-container">
             <nav className="public-navbar">
                 <Link to={user ? "/dashboard" : "/"} className="public-logo">JobNova</Link>
-                <button onClick={handleBack} className="btn-outline" style={{ padding: '0.5rem 1rem' }}>
-                    Back to Dashboard
+                <button onClick={handleBack} className="public-back-btn">
+                    <span style={{ fontSize: '1.2rem', lineHeight: 1 }}>←</span> {user ? "Back to Dashboard" : "Back to Home"}
                 </button>
             </nav>
 

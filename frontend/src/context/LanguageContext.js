@@ -19,6 +19,8 @@ export const LanguageProvider = ({ children }) => {
             findJobs: "Find Jobs",
             hireWorkers: "Hire Workers",
             goToDashboard: "Go to Dashboard",
+            login: "Login",
+            register: "Register",
             
             // Categories
             categoriesTitle: "Explore Opportunities",
@@ -50,6 +52,8 @@ export const LanguageProvider = ({ children }) => {
             findJobs: "نوکریاں تلاش کریں",
             hireWorkers: "ورکرز کی خدمات حاصل کریں",
             goToDashboard: "ڈیش بورڈ پر جائیں",
+            login: "لاگ ان",
+            register: "رجسٹر",
 
             // Categories
             categoriesTitle: "مواقع دریافت کریں",
@@ -76,8 +80,8 @@ export const LanguageProvider = ({ children }) => {
         }
     };
 
-    const t = (key) => {
-        return translations[language][key] || key;
+    const t = (key, defaultValue) => {
+        return translations[language][key] || defaultValue || key;
     };
 
     return (

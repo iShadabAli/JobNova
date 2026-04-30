@@ -5,6 +5,7 @@ const jobController = require('../controllers/jobController');
 const { authenticateUser } = require('../middleware/authMiddleware'); // Assuming this exists
 
 // Public-ish routes (Protected by login)
+router.get('/public', jobController.getJobs); // Completely public for landing page
 router.get('/', authenticateUser, jobController.getJobs);
 router.get('/match', authenticateUser, jobController.getMatchedJobs); // New matching route
 router.get('/nearby', authenticateUser, jobController.getNearbyJobs); // New map-based search
