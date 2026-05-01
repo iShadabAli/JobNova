@@ -99,6 +99,105 @@ const EmployerDashboard = ({ user, logout }) => {
     const [teWorkerType, setTeWorkerType] = useState(() => sessionStorage.getItem('te_worker_type') || 'all');
     const [loadingTE, setLoadingTE] = useState(false);
 
+    // --- Booking State ---
+    const [bookWorkers, setBookWorkers] = useState([]);
+    const [bookSearch, setBookSearch] = useState('');
+    const [loadingBookWorkers, setLoadingBookWorkers] = useState(false);
+    const [myBookings, setMyBookings] = useState([]);
+    const [loadingMyBookings, setLoadingMyBookings] = useState(false);
+    const [bookingModal, setBookingModal] = useState({ show: false, worker: null });
+    const [bookingForm, setBookingForm] = useState({ title: '', description: '', location: '', booking_date: '', start_time: '09:00', end_time: '17:00', offered_rate: '' });
+    const [submittingBooking, setSubmittingBooking] = useState(false);
+    const [bookViewTab, setBookViewTab] = useState('browse');
+
+    const fetchBookWorkers = async (searchVal) => {
+        setLoadingBookWorkers(true);
+        try {
+            const token = sessionStorage.getItem('token');
+            const q = searchVal !== undefined ? searchVal : bookSearch;
+            const url = q.trim() ? `http://localhost:5000/api/bookings/workers?search=${encodeURIComponent(q)}` : 'http://localhost:5000/api/bookings/workers';
+            const res = await fetch(url, { headers: { 'Authorization': `Bearer ${token}` } });
+            const result = await res.json();
+            if (result.success) setBookWorkers(result.data);
+        } catch (err) { console.error('Error fetching workers:', err); }
+        finally { setLoadingBookWorkers(false); }
+    };
+
+    const fetchMyBookings = async () => {
+        setLoadingMyBookings(true);
+        try {
+            const token = sessionStorage.getItem('token');
+            const res = await fetch('http://localhost:5000/api/bookings/employer', { headers: { 'Authorization': `Bearer ${token}` } });
+            const result = await res.json();
+            if (result.success) setMyBookings(result.data);
+        } catch (err) { console.error('Error fetching bookings:', err); }
+        finally { setLoadingMyBookings(false); }
+    };
+
+    const handleCreateBooking = async (e) => {
+        e.preventDefault();
+        
+        // Validation: Check if time is within worker's schedule (if schedule is in HH:mm-HH:mm format)
+        const worker = bookingModal.worker;
+        if (worker?.availability && worker.availability.includes('-')) {
+            const parts = worker.availability.split('-');
+            if (parts.length === 2) {
+                const wStart = parts[0].trim();
+                const wEnd = parts[1].trim();
+                const timeRegex = /^\d{2}:\d{2}$/;
+                
+                if (timeRegex.test(wStart) && timeRegex.test(wEnd)) {
+                    if (bookingForm.start_time < wStart || bookingForm.end_time > wEnd) {
+                        toast.error(`Worker is only available between ${wStart} and ${wEnd}`);
+                        return;
+                    }
+                }
+            }
+        }
+
+        setSubmittingBooking(true);
+        try {
+            const token = sessionStorage.getItem('token');
+            const res = await fetch('http://localhost:5000/api/bookings', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                body: JSON.stringify({ ...bookingForm, worker_id: bookingModal.worker?.id })
+            });
+            const result = await res.json();
+            if (result.success) {
+                toast.success('Booking request sent!', { icon: '📅' });
+                
+                if (bookingModal.linkedAppId) {
+                    await handleStatusUpdate(bookingModal.linkedAppId, 'Offered');
+                }
+
+                setBookingModal({ show: false, worker: null });
+                setBookingForm({ title: '', description: '', location: '', booking_date: '', start_time: '09:00', end_time: '17:00', offered_rate: '' });
+                fetchMyBookings();
+                setBookViewTab('my-bookings');
+            } else {
+                toast.error(result.error || 'Failed to create booking');
+            }
+        } catch (err) { toast.error('Network error'); }
+        finally { setSubmittingBooking(false); }
+    };
+
+    const handleBookingStatus = async (bookingId, status) => {
+        try {
+            const token = sessionStorage.getItem('token');
+            const res = await fetch(`http://localhost:5000/api/bookings/${bookingId}/status`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                body: JSON.stringify({ status })
+            });
+            const result = await res.json();
+            if (result.success) {
+                toast.success(`Booking ${status.toLowerCase()}`);
+                setMyBookings(myBookings.map(b => b.id === bookingId ? { ...b, status } : b));
+            }
+        } catch (err) { toast.error('Error updating status'); }
+    };
+
     // International Jobs State
     const [intlJob, setIntlJob] = useState({
         title: '', description: '', country: '', city: '',
@@ -578,10 +677,10 @@ const EmployerDashboard = ({ user, logout }) => {
                                 <h3>My Job Postings</h3>
                                 <p>View and manage your active listings</p>
                             </div>
-                            <div className="wc-dash-card disabled" onClick={() => toast('Book Workers coming soon!')}>
+                            <div className="wc-dash-card" onClick={() => { fetchBookWorkers(''); fetchMyBookings(); setActiveView('book-workers'); }}>
                                 <div className="wc-dash-card-icon">📅</div>
                                 <h3>Book Workers</h3>
-                                <p>Coming soon: Schedule and book workers</p>
+                                <p>Schedule and book blue-collar workers</p>
                             </div>
                             <div className="wc-dash-card" onClick={() => setActiveView('time-exchange')}>
                                 <div className="wc-dash-card-icon">✈️</div>
@@ -1320,7 +1419,22 @@ const EmployerDashboard = ({ user, logout }) => {
                                                             <>
                                                                 <button
                                                                     className="btn btn-primary btn-sm"
-                                                                    onClick={() => handleStatusUpdate(app.id, hiringMode === 'white' ? 'Shortlisted' : 'Offered')}
+                                                                    onClick={() => {
+                                                                        if (hiringMode === 'white') {
+                                                                            handleStatusUpdate(app.id, 'Shortlisted');
+                                                                        } else {
+                                                                            setBookingForm(prev => ({ ...prev, title: selectedJob?.title || '' }));
+                                                                            setBookingModal({
+                                                                                show: true,
+                                                                                worker: {
+                                                                                    id: app.applicant_id,
+                                                                                    full_name: app.applicant_name || 'Worker',
+                                                                                    availability: app.applicant_profile?.availability || null
+                                                                                },
+                                                                                linkedAppId: app.id
+                                                                            });
+                                                                        }
+                                                                    }}
                                                                 >
                                                                     {hiringMode === 'white' ? 'Shortlist' : 'Send Offer'}
                                                                 </button>
@@ -1447,6 +1561,153 @@ const EmployerDashboard = ({ user, logout }) => {
                                 Send Offer
                             </button>
                         </div>
+                    </div>
+                </div>
+            )}
+
+            {/* -------------------- BOOK WORKERS VIEW -------------------- */}
+            {activeView === 'book-workers' && (
+                <section style={{ padding: '0' }}>
+                    <div style={{ background: 'linear-gradient(135deg, #0f172a 0%, #334155 100%)', padding: '3rem 2rem', borderRadius: '24px', marginBottom: '2rem', textAlign: 'center' }}>
+                        <h1 style={{ fontSize: '2.2rem', color: '#fff', fontWeight: 800 }}>📅 Book Workers</h1>
+                        <p style={{ color: '#94a3b8' }}>Find and schedule blue-collar workers for your tasks</p>
+                    </div>
+
+                    <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
+                        {/* Tabs */}
+                        <div style={{ display: 'flex', gap: '0', marginBottom: '2rem', background: '#f1f5f9', borderRadius: '14px', padding: '4px', maxWidth: '400px' }}>
+                            <button onClick={() => { setBookViewTab('browse'); fetchBookWorkers(''); }} style={{ flex: 1, padding: '10px', borderRadius: '12px', border: 'none', fontWeight: 700, cursor: 'pointer', background: bookViewTab === 'browse' ? '#fff' : 'transparent', color: bookViewTab === 'browse' ? '#1e293b' : '#64748b', boxShadow: bookViewTab === 'browse' ? '0 2px 8px rgba(0,0,0,0.08)' : 'none', transition: 'all 0.2s' }}>Browse Workers</button>
+                            <button onClick={() => { setBookViewTab('my-bookings'); fetchMyBookings(); }} style={{ flex: 1, padding: '10px', borderRadius: '12px', border: 'none', fontWeight: 700, cursor: 'pointer', background: bookViewTab === 'my-bookings' ? '#fff' : 'transparent', color: bookViewTab === 'my-bookings' ? '#1e293b' : '#64748b', boxShadow: bookViewTab === 'my-bookings' ? '0 2px 8px rgba(0,0,0,0.08)' : 'none', transition: 'all 0.2s' }}>My Bookings</button>
+                        </div>
+
+                        {/* Browse Workers Tab */}
+                        {bookViewTab === 'browse' && (
+                            <>
+                                <div style={{ background: '#fff', padding: '1rem 1.5rem', borderRadius: '16px', display: 'flex', gap: '1rem', marginBottom: '2rem', boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
+                                    <input type="text" placeholder="Search by name, trade, skill, or city..." value={bookSearch} onChange={e => setBookSearch(e.target.value)} onKeyDown={e => e.key === 'Enter' && fetchBookWorkers()} style={{ flex: 1, padding: '12px', borderRadius: '10px', border: '1px solid #e2e8f0', fontSize: '0.95rem', outline: 'none' }} />
+                                    <button onClick={() => fetchBookWorkers()} className="btn btn-primary" style={{ padding: '0 2rem', borderRadius: '10px' }}>Search</button>
+                                </div>
+
+                                {loadingBookWorkers ? (
+                                    <div style={{ textAlign: 'center', padding: '3rem', color: '#64748b' }}>Searching workers...</div>
+                                ) : bookWorkers.length === 0 ? (
+                                    <div style={{ textAlign: 'center', padding: '3rem', background: '#f8fafc', borderRadius: '16px', color: '#64748b' }}>No workers found. Try a different search.</div>
+                                ) : (
+                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1.5rem' }}>
+                                        {bookWorkers.map(w => (
+                                            <div key={w.id} style={{ background: '#fff', padding: '1.5rem', borderRadius: '20px', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px rgba(0,0,0,0.04)', transition: 'transform 0.2s' }} onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-4px)'} onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}>
+                                                <div style={{ display: 'flex', gap: '14px', marginBottom: '1rem' }}>
+                                                    <div style={{ width: '55px', height: '55px', borderRadius: '14px', background: 'linear-gradient(135deg, #4f46e5, #7c3aed)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.4rem', fontWeight: 700, flexShrink: 0, overflow: 'hidden' }}>
+                                                        {w.avatar_url ? <img src={w.avatar_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : (w.full_name || w.first_name || 'W').charAt(0).toUpperCase()}
+                                                    </div>
+                                                    <div style={{ flex: 1, minWidth: 0 }}>
+                                                        <h3 style={{ margin: 0, fontSize: '1.05rem', color: '#1e293b', fontWeight: 700 }}>{w.full_name || `${w.first_name || ''} ${w.last_name || ''}`.trim() || 'Worker'}</h3>
+                                                        {w.trade && <span style={{ fontSize: '0.8rem', background: '#e0e7ff', color: '#4338ca', padding: '2px 8px', borderRadius: '10px', display: 'inline-block', marginTop: '4px' }}>{w.trade}</span>}
+                                                    </div>
+                                                </div>
+                                                <div style={{ fontSize: '0.88rem', color: '#64748b', display: 'flex', flexDirection: 'column', gap: '4px', marginBottom: '1rem' }}>
+                                                    {w.location && <span>📍 {w.location}</span>}
+                                                    {w.hourly_rate && <span>💰 {w.hourly_rate}/hr</span>}
+                                                    {w.availability && <span>⏱️ {w.availability}</span>}
+                                                    {w.avg_rating > 0 && <span>⭐ {Number(w.avg_rating).toFixed(1)} ({w.total_reviews} reviews)</span>}
+                                                </div>
+                                                {w.skills && (
+                                                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginBottom: '1rem' }}>
+                                                        {w.skills.split(',').slice(0, 4).map((s, i) => <span key={i} style={{ fontSize: '0.75rem', background: '#f1f5f9', color: '#475569', padding: '3px 8px', borderRadius: '6px' }}>{s.trim()}</span>)}
+                                                    </div>
+                                                )}
+                                                <button onClick={() => setBookingModal({ show: true, worker: w })} className="btn btn-primary" style={{ width: '100%', borderRadius: '12px', padding: '10px', background: '#10b981', border: 'none', fontWeight: 700 }}>📅 Book This Worker</button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </>
+                        )}
+
+                        {/* My Bookings Tab */}
+                        {bookViewTab === 'my-bookings' && (
+                            <>
+                                {loadingMyBookings ? (
+                                    <div style={{ textAlign: 'center', padding: '3rem', color: '#64748b' }}>Loading bookings...</div>
+                                ) : myBookings.length === 0 ? (
+                                    <div style={{ textAlign: 'center', padding: '3rem', background: '#f8fafc', borderRadius: '16px', color: '#64748b' }}>
+                                        <p style={{ fontSize: '3rem', marginBottom: '1rem' }}>📅</p>
+                                        <p>No bookings yet. Browse workers and create your first booking!</p>
+                                    </div>
+                                ) : (
+                                    <div style={{ display: 'grid', gap: '1rem' }}>
+                                        {myBookings.map(b => (
+                                            <div key={b.id} style={{ background: '#fff', padding: '1.5rem', borderRadius: '16px', border: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
+                                                <div style={{ flex: 1, minWidth: '200px' }}>
+                                                    <h3 style={{ margin: '0 0 4px 0', fontSize: '1.1rem', color: '#1e293b' }}>{b.title}</h3>
+                                                    <p style={{ margin: '0 0 6px 0', color: '#64748b', fontSize: '0.9rem' }}>Worker: <strong>{b.worker?.full_name || 'Worker'}</strong> {b.worker?.trade ? `(${b.worker.trade})` : ''}</p>
+                                                    <div style={{ display: 'flex', gap: '16px', fontSize: '0.85rem', color: '#64748b', flexWrap: 'wrap' }}>
+                                                        <span>📅 {new Date(b.booking_date).toLocaleDateString()}</span>
+                                                        <span>⏰ {b.start_time?.slice(0,5)} - {b.end_time?.slice(0,5)}</span>
+                                                        {b.location && <span>📍 {b.location}</span>}
+                                                        {b.offered_rate && <span>💰 {b.offered_rate}</span>}
+                                                    </div>
+                                                </div>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                                    <span style={{ padding: '6px 14px', borderRadius: '20px', fontWeight: 700, fontSize: '0.8rem', background: b.status === 'Pending' ? '#fef3c7' : b.status === 'Accepted' ? '#d1fae5' : b.status === 'Completed' ? '#dbeafe' : b.status === 'Rejected' ? '#fee2e2' : '#f1f5f9', color: b.status === 'Pending' ? '#92400e' : b.status === 'Accepted' ? '#065f46' : b.status === 'Completed' ? '#1e40af' : b.status === 'Rejected' ? '#991b1b' : '#475569' }}>{b.status}</span>
+                                                    {b.status === 'Accepted' && <button onClick={() => handleBookingStatus(b.id, 'Completed')} className="btn" style={{ padding: '6px 14px', borderRadius: '12px', background: '#3b82f6', color: '#fff', border: 'none', fontWeight: 600, fontSize: '0.8rem' }}>Mark Done</button>}
+                                                    {b.status === 'Pending' && <button onClick={() => handleBookingStatus(b.id, 'Cancelled')} className="btn" style={{ padding: '6px 14px', borderRadius: '12px', background: '#f1f5f9', color: '#64748b', border: '1px solid #e2e8f0', fontWeight: 600, fontSize: '0.8rem' }}>Cancel</button>}
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </>
+                        )}
+                    </div>
+                </section>
+            )}
+
+            {/* Booking Modal */}
+            {bookingModal.show && (
+                <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }} onClick={() => setBookingModal({ show: false, worker: null })}>
+                    <div style={{ background: '#fff', borderRadius: '24px', padding: '2rem', maxWidth: '500px', width: '100%', maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 20px 60px rgba(0,0,0,0.3)' }} onClick={e => e.stopPropagation()}>
+                        <h2 style={{ margin: '0 0 4px 0', fontSize: '1.4rem', color: '#1e293b' }}>📅 Book Worker</h2>
+                        <p style={{ margin: '0 0 1.5rem 0', color: '#64748b', fontSize: '0.9rem' }}>Booking <strong>{bookingModal.worker?.full_name || bookingModal.worker?.first_name || 'Worker'}</strong> {bookingModal.worker?.availability ? `(Avail: ${bookingModal.worker.availability})` : ''}</p>
+
+                        <form onSubmit={handleCreateBooking} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                            <div>
+                                <label style={{ fontWeight: 600, fontSize: '0.9rem', color: '#334155', display: 'block', marginBottom: '4px' }}>Task Title *</label>
+                                <input type="text" required value={bookingForm.title} onChange={e => setBookingForm({...bookingForm, title: e.target.value})} placeholder="e.g., Fix kitchen plumbing" style={{ width: '100%', padding: '10px 12px', borderRadius: '10px', border: '1px solid #e2e8f0', fontSize: '0.95rem' }} />
+                            </div>
+                            <div>
+                                <label style={{ fontWeight: 600, fontSize: '0.9rem', color: '#334155', display: 'block', marginBottom: '4px' }}>Description</label>
+                                <textarea value={bookingForm.description} onChange={e => setBookingForm({...bookingForm, description: e.target.value})} placeholder="Describe the work needed..." rows={2} style={{ width: '100%', padding: '10px 12px', borderRadius: '10px', border: '1px solid #e2e8f0', fontSize: '0.95rem', resize: 'vertical' }} />
+                            </div>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                                <div>
+                                    <label style={{ fontWeight: 600, fontSize: '0.9rem', color: '#334155', display: 'block', marginBottom: '4px' }}>Location</label>
+                                    <input type="text" value={bookingForm.location} onChange={e => setBookingForm({...bookingForm, location: e.target.value})} placeholder="e.g., Gulberg, Lahore" style={{ width: '100%', padding: '10px 12px', borderRadius: '10px', border: '1px solid #e2e8f0', fontSize: '0.95rem' }} />
+                                </div>
+                                <div>
+                                    <label style={{ fontWeight: 600, fontSize: '0.9rem', color: '#334155', display: 'block', marginBottom: '4px' }}>Offered Rate</label>
+                                    <input type="text" value={bookingForm.offered_rate} onChange={e => setBookingForm({...bookingForm, offered_rate: e.target.value})} placeholder="e.g., Rs. 2000" style={{ width: '100%', padding: '10px 12px', borderRadius: '10px', border: '1px solid #e2e8f0', fontSize: '0.95rem' }} />
+                                </div>
+                            </div>
+                            <div>
+                                <label style={{ fontWeight: 600, fontSize: '0.9rem', color: '#334155', display: 'block', marginBottom: '4px' }}>Date *</label>
+                                <input type="date" required value={bookingForm.booking_date} onChange={e => setBookingForm({...bookingForm, booking_date: e.target.value})} style={{ width: '100%', padding: '10px 12px', borderRadius: '10px', border: '1px solid #e2e8f0', fontSize: '0.95rem' }} />
+                            </div>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                                <div>
+                                    <label style={{ fontWeight: 600, fontSize: '0.9rem', color: '#334155', display: 'block', marginBottom: '4px' }}>Start Time *</label>
+                                    <input type="time" required value={bookingForm.start_time} onChange={e => setBookingForm({...bookingForm, start_time: e.target.value})} style={{ width: '100%', padding: '10px 12px', borderRadius: '10px', border: '1px solid #e2e8f0', fontSize: '0.95rem' }} />
+                                </div>
+                                <div>
+                                    <label style={{ fontWeight: 600, fontSize: '0.9rem', color: '#334155', display: 'block', marginBottom: '4px' }}>End Time *</label>
+                                    <input type="time" required value={bookingForm.end_time} onChange={e => setBookingForm({...bookingForm, end_time: e.target.value})} style={{ width: '100%', padding: '10px 12px', borderRadius: '10px', border: '1px solid #e2e8f0', fontSize: '0.95rem' }} />
+                                </div>
+                            </div>
+                            <div style={{ display: 'flex', gap: '10px', marginTop: '0.5rem' }}>
+                                <button type="button" onClick={() => setBookingModal({ show: false, worker: null })} style={{ flex: 1, padding: '12px', borderRadius: '12px', background: '#f1f5f9', color: '#475569', border: 'none', fontWeight: 700, cursor: 'pointer' }}>Cancel</button>
+                                <button type="submit" disabled={submittingBooking} style={{ flex: 1, padding: '12px', borderRadius: '12px', background: '#10b981', color: '#fff', border: 'none', fontWeight: 700, cursor: 'pointer', boxShadow: '0 4px 12px rgba(16,185,129,0.3)' }}>{submittingBooking ? 'Sending...' : '📅 Confirm Booking'}</button>
+                            </div>
+                        </form>
                     </div>
                 </div>
             )}

@@ -98,6 +98,13 @@ const translations = {
         card_international_desc: 'Coming soon: Overseas opportunities',
         card_time_exchange: 'Time Exchange',
         card_time_exchange_desc: 'Coming soon: Freelance availability',
+        card_bookings: 'My Bookings',
+        card_bookings_desc: 'View your scheduled jobs',
+        schedule_header: 'My Schedule',
+        schedule_subtitle: 'Set your daily working hours',
+        schedule_start: 'Start Time',
+        schedule_end: 'End Time',
+        btn_save_schedule: 'Save Schedule',
         card_schedule: 'My Schedule',
         card_schedule_desc: 'Set your availability & work hours',
         te_header: 'Time Exchange ✈️',
@@ -212,6 +219,13 @@ const translations = {
         card_international_desc: 'جلد آ رہا ہے: بیرونِ ملک مواقع',
         card_time_exchange: 'ٹائم ایکسچینج',
         card_time_exchange_desc: 'جلد آ رہا ہے: فری لانس دستیابی',
+        card_bookings: 'میری بکنگز',
+        card_bookings_desc: 'شیڈول شدہ کام دیکھیں',
+        schedule_header: 'میرا شیڈول',
+        schedule_subtitle: 'کام کے اوقات مقرر کریں',
+        schedule_start: 'آغاز',
+        schedule_end: 'اختتام',
+        btn_save_schedule: 'محفوظ کریں',
         card_schedule: 'میرا شیڈیول',
         card_schedule_desc: 'اپنی دستیابی اور اوقات مقرر کریں'
     }
@@ -314,6 +328,8 @@ const BlueCollarDashboard = ({ user, logout }) => {
     const handleTabChange = (tab) => {
         _setActiveTab(tab);
         if (tab === 'time-exchange') { fetchMyTravel(); fetchTERequests(); }
+        if (tab === 'my-bookings') fetchBookings();
+        if (tab === 'my-schedule') fetchMyProfile();
         window.history.pushState(null, '', `#${tab}`);
     }; // 'welcome', 'find-jobs', 'my-jobs', 'my-ratings'
     const [profileName, setProfileName] = useState('');
@@ -339,9 +355,70 @@ const BlueCollarDashboard = ({ user, logout }) => {
     const [loadingApps, setLoadingApps] = useState(false);
     const [loadingRatings, setLoadingRatings] = useState(false);
 
-    // --- State: Availability ---
+    // --- State: Availability & Bookings ---
     const [availability, setAvailability] = useState(true);
+    const [myBookings, setMyBookings] = useState([]);
+    const [loadingBookings, setLoadingBookings] = useState(false);
+    const [scheduleForm, setScheduleForm] = useState({ start: '09:00', end: '17:00' });
+    const [savingSchedule, setSavingSchedule] = useState(false);
 
+    const fetchMyProfile = async () => {
+        try {
+            const token = sessionStorage.getItem('token');
+            const res = await fetch('http://localhost:5000/api/profile', { headers: { 'Authorization': `Bearer ${token}` } });
+            const result = await res.json();
+            if (result.success && result.data?.availability) {
+                const parts = result.data.availability.split('-');
+                if (parts.length === 2) {
+                    setScheduleForm({ start: parts[0], end: parts[1] });
+                }
+            }
+        } catch(e) {}
+    };
+    
+    const saveSchedule = async (e) => {
+        e.preventDefault();
+        setSavingSchedule(true);
+        try {
+            const token = sessionStorage.getItem('token');
+            const res = await fetch('http://localhost:5000/api/profile', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                body: JSON.stringify({ availability: `${scheduleForm.start}-${scheduleForm.end}` })
+            });
+            if (res.ok) {
+                toast.success(language === 'ur' ? 'شیڈول محفوظ ہو گیا' : 'Schedule saved!');
+            }
+        } catch (err) { toast.error('Error saving schedule'); }
+        finally { setSavingSchedule(false); }
+    };
+
+    const fetchBookings = async () => {
+        setLoadingBookings(true);
+        try {
+            const token = sessionStorage.getItem('token');
+            const res = await fetch('http://localhost:5000/api/bookings/worker', { headers: { 'Authorization': `Bearer ${token}` } });
+            const result = await res.json();
+            if (result.success) setMyBookings(result.data);
+        } catch (err) { console.error('Error fetching bookings:', err); }
+        finally { setLoadingBookings(false); }
+    };
+
+    const handleBookingStatus = async (id, status) => {
+        try {
+            const token = sessionStorage.getItem('token');
+            const res = await fetch(`http://localhost:5000/api/bookings/${id}/status`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                body: JSON.stringify({ status })
+            });
+            const result = await res.json();
+            if (result.success) {
+                toast.success(`Booking ${status.toLowerCase()}`);
+                setMyBookings(myBookings.map(b => b.id === id ? { ...b, status } : b));
+            }
+        } catch (err) { toast.error('Error updating status'); }
+    };
     // International Jobs State
     const [intlJobs, setIntlJobs] = useState([]);
     const [filteredIntlJobs, setFilteredIntlJobs] = useState([]);
@@ -613,20 +690,37 @@ const BlueCollarDashboard = ({ user, logout }) => {
             setLoadingApps(true);
             try {
                 const token = sessionStorage.getItem('token');
+                
+                // Fetch Bookings first to cross-reference
+                let bookings = [];
+                try {
+                    const bRes = await fetch('http://localhost:5000/api/bookings/worker', { headers: { 'Authorization': `Bearer ${token}` } });
+                    if (bRes.ok) {
+                        const bData = await bRes.json();
+                        if (bData.success) bookings = bData.data;
+                    }
+                } catch(e) {}
+
                 const response = await fetch('http://localhost:5000/api/jobs/applications/my-applications', {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
                 if (response.ok) {
                     const data = await response.json();
                     
-                    // Filter out Rejected apps and apps tied to Deleted jobs (unless completed)
+                    // Filter out Rejected apps and apps tied to Deleted jobs
                     const filteredApps = data.filter(app => {
                         if (app.status === 'Rejected') return false;
                         if ((!app.jobs || app.jobs.status === 'Deleted') && app.status !== 'Completed') return false;
                         return true;
                     });
                     
-                    setMyApps(filteredApps);
+                    // Attach booking info
+                    const enrichedApps = filteredApps.map(app => {
+                        const linkedBooking = bookings.find(b => b.employer_id === app.jobs?.employer_id && b.title === app.jobs?.title);
+                        return { ...app, linkedBooking };
+                    });
+                    
+                    setMyApps(enrichedApps);
                 }
             } catch (error) {
                 console.error('Failed to fetch applications:', error);
@@ -965,11 +1059,97 @@ const BlueCollarDashboard = ({ user, logout }) => {
                                 <h3>{t('card_time_exchange')}</h3>
                                 <p>{language === 'ur' ? 'دیگر شہروں میں سفر اور کام کریں' : 'Travel and work in other cities'}</p>
                             </div>
+                            <div className="wc-dash-card" onClick={() => handleTabChange('my-bookings')}>
+                                <div className="wc-dash-card-icon">📅</div>
+                                <h3>{t('card_bookings')}</h3>
+                                <p>{t('card_bookings_desc')}</p>
+                            </div>
                         </div>
                     </section>
                 )}
 
-                                {/* --- Time Exchange Tab --- */}
+                 {/* --- My Schedule Tab --- */}
+                {activeTab === 'my-schedule' && (
+                    <section className="wc-welcome-section">
+                        <div className="wc-welcome-hero" style={{ background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)' }}>
+                            <h1>{t('schedule_header')} ⏱️</h1>
+                            <p>{t('schedule_subtitle')}</p>
+                        </div>
+                        <div style={{ maxWidth: '600px', margin: '0 auto', padding: '2rem', background: '#fff', borderRadius: '24px', boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }}>
+                            <form onSubmit={saveSchedule} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                                <div style={{ display: 'flex', gap: '1rem' }}>
+                                    <div style={{ flex: 1 }}>
+                                        <label style={{ fontWeight: 600, display: 'block', marginBottom: '8px', color: '#334155' }}>{t('schedule_start')}</label>
+                                        <input type="time" required value={scheduleForm.start} onChange={e => setScheduleForm({...scheduleForm, start: e.target.value})} style={{ width: '100%', padding: '12px', borderRadius: '12px', border: '1px solid #e2e8f0', fontSize: '1rem' }} />
+                                    </div>
+                                    <div style={{ flex: 1 }}>
+                                        <label style={{ fontWeight: 600, display: 'block', marginBottom: '8px', color: '#334155' }}>{t('schedule_end')}</label>
+                                        <input type="time" required value={scheduleForm.end} onChange={e => setScheduleForm({...scheduleForm, end: e.target.value})} style={{ width: '100%', padding: '12px', borderRadius: '12px', border: '1px solid #e2e8f0', fontSize: '1rem' }} />
+                                    </div>
+                                </div>
+                                <button type="submit" disabled={savingSchedule} className="btn btn-primary" style={{ padding: '14px', borderRadius: '12px', fontSize: '1.05rem', fontWeight: 700 }}>
+                                    {savingSchedule ? '...' : t('btn_save_schedule')}
+                                </button>
+                            </form>
+                        </div>
+                    </section>
+                )}
+
+                {/* --- My Bookings Tab --- */}
+                {activeTab === 'my-bookings' && (
+                    <section className="wc-welcome-section">
+                        <div className="wc-welcome-hero" style={{ background: 'linear-gradient(135deg, #1e293b 0%, #334155 100%)' }}>
+                            <h1>{language === 'ur' ? 'میری بکنگز' : 'My Bookings'} 📅</h1>
+                            <p>{language === 'ur' ? 'اپنے شیڈول شدہ کاموں کا نظم کریں' : 'Manage your scheduled jobs'}</p>
+                        </div>
+                        
+                        <div style={{ maxWidth: '1000px', margin: '0 auto', padding: '0 1rem' }}>
+                            {loadingBookings ? (
+                                <div style={{ textAlign: 'center', padding: '3rem', color: '#64748b' }}>Loading bookings...</div>
+                            ) : myBookings.length === 0 ? (
+                                <div style={{ textAlign: 'center', padding: '3rem', background: '#fff', borderRadius: '16px', color: '#64748b', boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>
+                                    <p style={{ fontSize: '3rem', marginBottom: '1rem' }}>📅</p>
+                                    <p>{language === 'ur' ? 'ابھی تک کوئی بکنگ نہیں۔' : 'No bookings yet.'}</p>
+                                </div>
+                            ) : (
+                                <div style={{ display: 'grid', gap: '1rem' }}>
+                                    {myBookings.map(b => (
+                                        <div key={b.id} style={{ background: '#fff', padding: '1.5rem', borderRadius: '16px', border: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
+                                            <div style={{ flex: 1, minWidth: '250px' }}>
+                                                <h3 style={{ margin: '0 0 6px 0', fontSize: '1.2rem', color: '#1e293b', fontWeight: 800 }}>{b.title}</h3>
+                                                <p style={{ margin: '0 0 8px 0', color: '#64748b', fontSize: '0.95rem' }}>{language === 'ur' ? 'آجر' : 'Employer'}: <strong>{b.employer?.full_name || b.employer?.first_name || 'Employer'}</strong></p>
+                                                <div style={{ display: 'flex', gap: '16px', fontSize: '0.9rem', color: '#475569', flexWrap: 'wrap', background: '#f8fafc', padding: '10px', borderRadius: '10px' }}>
+                                                    <span>📅 {new Date(b.booking_date).toLocaleDateString()}</span>
+                                                    <span>⏰ {b.start_time?.slice(0,5)} - {b.end_time?.slice(0,5)}</span>
+                                                    {b.location && <span>📍 {b.location}</span>}
+                                                    {b.offered_rate && <span>💰 {b.offered_rate}</span>}
+                                                </div>
+                                                {b.description && <p style={{ marginTop: '10px', fontSize: '0.9rem', color: '#64748b' }}>{b.description}</p>}
+                                            </div>
+                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', alignItems: 'flex-end', minWidth: '140px' }}>
+                                                <span style={{ padding: '6px 14px', borderRadius: '20px', fontWeight: 700, fontSize: '0.85rem', textAlign: 'center', width: '100%', background: b.status === 'Pending' ? '#fef3c7' : b.status === 'Accepted' ? '#d1fae5' : b.status === 'Completed' ? '#dbeafe' : b.status === 'Rejected' ? '#fee2e2' : '#f1f5f9', color: b.status === 'Pending' ? '#92400e' : b.status === 'Accepted' ? '#065f46' : b.status === 'Completed' ? '#1e40af' : b.status === 'Rejected' ? '#991b1b' : '#475569' }}>
+                                                    {b.status === 'Pending' ? (language === 'ur' ? 'زیر التوا' : 'Pending') :
+                                                     b.status === 'Accepted' ? (language === 'ur' ? 'قبول کر لیا' : 'Accepted') :
+                                                     b.status === 'Completed' ? (language === 'ur' ? 'مکمل' : 'Completed') :
+                                                     b.status === 'Rejected' ? (language === 'ur' ? 'مسترد شدہ' : 'Rejected') :
+                                                     (language === 'ur' ? 'منسوخ' : 'Cancelled')}
+                                                </span>
+                                                {b.status === 'Pending' && (
+                                                    <div style={{ display: 'flex', gap: '8px', width: '100%' }}>
+                                                        <button onClick={() => handleBookingStatus(b.id, 'Rejected')} className="btn" style={{ flex: 1, padding: '8px', borderRadius: '10px', background: '#fee2e2', color: '#ef4444', border: 'none', fontWeight: 700, fontSize: '0.8rem' }}>{language === 'ur' ? 'مسترد کریں' : 'Reject'}</button>
+                                                        <button onClick={() => handleBookingStatus(b.id, 'Accepted')} className="btn" style={{ flex: 1, padding: '8px', borderRadius: '10px', background: '#10b981', color: '#fff', border: 'none', fontWeight: 700, fontSize: '0.8rem', boxShadow: '0 4px 10px rgba(16,185,129,0.3)' }}>{language === 'ur' ? 'قبول کریں' : 'Accept'}</button>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    </section>
+                )}
+
+                               {/* --- Time Exchange Tab --- */}
                 {activeTab === 'time-exchange' && (
                     <section className="wc-welcome-section">
                         <div className="wc-welcome-hero" style={{ background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)' }}>
@@ -1455,6 +1635,12 @@ const BlueCollarDashboard = ({ user, logout }) => {
                                                     {app.jobs?.location} • {app.jobs?.hourly_rate || app.jobs?.salary_range}
                                                     {app.jobs?.duration && ` • ⏳ ${app.jobs.duration}`}
                                                 </p>
+                                                {app.linkedBooking && (
+                                                    <div style={{ marginTop: '8px', background: '#f8fafc', padding: '8px 12px', borderRadius: '8px', fontSize: '0.85rem', color: '#475569', display: 'inline-flex', gap: '15px', alignItems: 'center', border: '1px solid #e2e8f0' }}>
+                                                        <span>📅 <strong>{new Date(app.linkedBooking.booking_date).toLocaleDateString()}</strong></span>
+                                                        <span>⏰ <strong>{app.linkedBooking.start_time?.slice(0,5)} - {app.linkedBooking.end_time?.slice(0,5)}</strong></span>
+                                                    </div>
+                                                )}
                                                 <div style={{ marginTop: '10px', display: 'flex', alignItems: 'center', gap: '10px' }}>
                                                     <span className={`badge ${app.status === 'Completed' ? 'badge-green' : app.status === 'In Progress' ? 'badge-blue' : app.status === 'Offered' ? 'badge-purple' : 'badge-gray'}`}>
                                                         {t('status_label')} {app.status}

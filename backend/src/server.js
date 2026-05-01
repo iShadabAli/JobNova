@@ -44,6 +44,7 @@ app.use('/api/chat', require('./routes/chatRoutes'));
 app.use('/api/contact', require('./routes/contactRoutes'));
 app.use('/api/international-jobs', require('./routes/internationalJobRoutes'));
 app.use('/api/time-exchange', timeExchangeRoutes);
+app.use('/api/bookings', require('./routes/bookingRoutes'));
 
 // Error handling middleware
 app.use((err, req, res, next) => {
