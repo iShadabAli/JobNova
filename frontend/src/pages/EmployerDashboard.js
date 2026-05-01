@@ -906,14 +906,54 @@ const EmployerDashboard = ({ user, logout }) => {
                 {/* -------------------- MY INTERNATIONAL JOBS VIEW -------------------- */}
                 {activeView === 'my-international-jobs' && (
                     <section className="wc-welcome-section">
-                        <div className="wc-welcome-hero">
-                            <h1>🌍 My International Job Postings</h1>
-                            <p>Manage your overseas listings and view applicants</p>
+                        <div style={{ 
+                            background: 'linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #312e81 100%)',
+                            padding: '3rem 2rem',
+                            borderRadius: '24px',
+                            marginBottom: '2rem',
+                            textAlign: 'center',
+                            position: 'relative',
+                            overflow: 'hidden',
+                            border: '1px solid rgba(255,255,255,0.08)',
+                            boxShadow: '0 20px 50px rgba(0,0,0,0.3)'
+                        }}>
+                            <div style={{ position: 'absolute', top: '-20%', left: '-10%', width: '300px', height: '300px', background: 'radial-gradient(circle, rgba(79,70,229,0.2) 0%, transparent 70%)', filter: 'blur(50px)' }}></div>
+                            <div style={{ position: 'absolute', bottom: '-10%', right: '-5%', width: '250px', height: '250px', background: 'radial-gradient(circle, rgba(16,185,129,0.1) 0%, transparent 70%)', filter: 'blur(40px)' }}></div>
+                            <div style={{ position: 'relative', zIndex: 1 }}>
+                                <span style={{ fontSize: '3rem', display: 'block', marginBottom: '1rem' }}>🌍</span>
+                                <h1 style={{ margin: '0 0 0.5rem 0', fontSize: '2.5rem', background: 'linear-gradient(to right, #fff, #94a3b8)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', fontWeight: 800 }}>
+                                    My International Postings
+                                </h1>
+                                <p style={{ color: '#94a3b8', fontSize: '1.1rem', maxWidth: '500px', margin: '0 auto' }}>
+                                    Manage your global listings, track international talent, and handle visa sponsorships seamlessly.
+                                </p>
+                            </div>
                         </div>
                         <div style={{ maxWidth: '900px', margin: '0 auto' }}>
-                            <button className="btn btn-primary" onClick={() => setActiveView('post-international')} style={{ marginBottom: '2rem', padding: '0.75rem 1.5rem' }}>
-                                ➕ Post New International Job
-                            </button>
+                            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '3rem' }}>
+                                <button 
+                                    className="btn btn-primary" 
+                                    onClick={() => setActiveView('post-international')} 
+                                    style={{ 
+                                        padding: '1rem 2rem', 
+                                        fontSize: '1.1rem', 
+                                        fontWeight: 600, 
+                                        borderRadius: '16px',
+                                        background: 'linear-gradient(135deg, #4f46e5, #7c3aed)',
+                                        border: 'none',
+                                        boxShadow: '0 10px 20px rgba(79,70,229,0.3)',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '10px',
+                                        transition: 'all 0.3s'
+                                    }}
+                                    onMouseOver={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 15px 30px rgba(79,70,229,0.4)'; }}
+                                    onMouseOut={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 10px 20px rgba(79,70,229,0.3)'; }}
+                                >
+                                    <span style={{ fontSize: '1.2rem', background: 'rgba(255,255,255,0.2)', borderRadius: '50%', width: '28px', height: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>+</span>
+                                    Post New International Job
+                                </button>
+                            </div>
 
                             {loadingMyIntlJobs ? (
                                 <div style={{ textAlign: 'center', padding: '3rem', color: '#94a3b8' }}>Loading your international jobs...</div>

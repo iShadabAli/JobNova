@@ -100,11 +100,6 @@ const translations = {
         card_time_exchange_desc: 'Coming soon: Freelance availability',
         card_bookings: 'My Bookings',
         card_bookings_desc: 'View your scheduled jobs',
-        schedule_header: 'My Schedule',
-        schedule_subtitle: 'Set your daily working hours',
-        schedule_start: 'Start Time',
-        schedule_end: 'End Time',
-        btn_save_schedule: 'Save Schedule',
         card_schedule: 'My Schedule',
         card_schedule_desc: 'Set your availability & work hours',
         te_header: 'Time Exchange ✈️',
@@ -221,11 +216,6 @@ const translations = {
         card_time_exchange_desc: 'جلد آ رہا ہے: فری لانس دستیابی',
         card_bookings: 'میری بکنگز',
         card_bookings_desc: 'شیڈول شدہ کام دیکھیں',
-        schedule_header: 'میرا شیڈول',
-        schedule_subtitle: 'کام کے اوقات مقرر کریں',
-        schedule_start: 'آغاز',
-        schedule_end: 'اختتام',
-        btn_save_schedule: 'محفوظ کریں',
         card_schedule: 'میرا شیڈیول',
         card_schedule_desc: 'اپنی دستیابی اور اوقات مقرر کریں'
     }
@@ -458,6 +448,7 @@ const BlueCollarDashboard = ({ user, logout }) => {
             fetchMyTravel();
             fetchTERequests();
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [activeTab, fetchTERequests]);
 
     const handleTERequestStatus = async (requestId, status) => {
@@ -931,6 +922,7 @@ const BlueCollarDashboard = ({ user, logout }) => {
 
         // Ensure we're on the find-jobs tab to show results
         handleTabChange('find-jobs');
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [fetchJobs]);
 
     return (
@@ -1245,11 +1237,11 @@ const BlueCollarDashboard = ({ user, logout }) => {
                         </div>
 
                         {/* -------------------- TIME EXCHANGE HIRE REQUESTS -------------------- */}
-                        <div style={{ marginTop: '3rem', background: 'rgba(255,255,255,0.02)', padding: '2rem', borderRadius: '30px', border: '1px solid rgba(255,255,255,0.05)' }}>
-                            <h2 style={{ fontSize: '1.8rem', color: '#f8fafc', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <div style={{ marginTop: '2rem', background: '#ffffff', padding: '2rem', borderRadius: '24px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)' }}>
+                            <h2 style={{ fontSize: '1.5rem', color: '#1e293b', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '12px', fontWeight: 700 }}>
                                 💼 {language === 'ur' ? 'کام کی درخواستیں' : 'Work Hire Requests'} 
                                 {teRequests.filter(r => r.status === 'Pending').length > 0 && (
-                                    <span style={{ fontSize: '0.8rem', background: '#ef4444', color: 'white', padding: '4px 12px', borderRadius: '20px', fontWeight: 800 }}>
+                                    <span style={{ fontSize: '0.75rem', background: '#ef4444', color: 'white', padding: '4px 12px', borderRadius: '20px', fontWeight: 700 }}>
                                         {teRequests.filter(r => r.status === 'Pending').length} NEW
                                     </span>
                                 )}
@@ -1262,53 +1254,50 @@ const BlueCollarDashboard = ({ user, logout }) => {
                             ) : teRequests.length > 0 ? (
                                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: '1.5rem' }}>
                                     {teRequests.map(req => (
-                                        <div key={req.id} style={{ background: 'linear-gradient(135deg, rgba(30,41,59,0.7) 0%, rgba(15,23,42,0.8) 100%)', padding: '2rem', borderRadius: '30px', border: '1px solid rgba(255,255,255,0.08)', boxShadow: '0 20px 40px rgba(0,0,0,0.3)', backdropFilter: 'blur(12px)', position: 'relative', overflow: 'hidden' }}>
-                                            <div style={{ position: 'absolute', top: 0, right: 0, padding: '8px 16px', background: req.status === 'Pending' ? '#f59e0b' : req.status === 'Accepted' ? '#10b981' : '#ef4444', color: '#fff', fontSize: '0.7rem', fontWeight: 900, borderBottomLeftRadius: '20px', letterSpacing: '1px' }}>{req.status.toUpperCase()}</div>
+                                        <div key={req.id} style={{ background: '#f8fafc', padding: '1.5rem', borderRadius: '16px', border: '1px solid #e2e8f0', position: 'relative', overflow: 'hidden', transition: 'box-shadow 0.2s', boxShadow: '0 1px 3px rgba(0,0,0,0.06)' }}>
+                                            <div style={{ position: 'absolute', top: 0, right: 0, padding: '6px 14px', background: req.status === 'Pending' ? '#f59e0b' : req.status === 'Accepted' ? '#10b981' : '#ef4444', color: '#fff', fontSize: '0.7rem', fontWeight: 700, borderBottomLeftRadius: '12px', letterSpacing: '0.5px' }}>{req.status.toUpperCase()}</div>
                                             
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '1.5rem' }}>
-                                                <div style={{ width: '60px', height: '60px', borderRadius: '18px', background: 'linear-gradient(135deg, #4f46e5, #7c3aed)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.8rem', color: 'white', boxShadow: '0 10px 20px rgba(79,70,229,0.3)' }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '1rem' }}>
+                                                <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: 'linear-gradient(135deg, #4f46e5, #7c3aed)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.3rem', color: 'white', fontWeight: 700 }}>
                                                     {req.employer?.first_name?.charAt(0) || '🏢'}
                                                 </div>
                                                 <div>
-                                                    <h3 style={{ margin: 0, color: '#f8fafc', fontSize: '1.3rem', fontWeight: 800 }}>{req.employer?.first_name} {req.employer?.last_name}</h3>
-                                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                                                        <p style={{ margin: 0, color: '#94a3b8', fontSize: '0.9rem', fontWeight: 500 }}>Potential Employer</p>
-                                                        <button 
-                                                            onClick={() => navigate(`/profile/${req.employer_id}`)}
-                                                            style={{ background: 'none', border: 'none', color: '#818cf8', fontSize: '0.8rem', padding: 0, cursor: 'pointer', textAlign: 'left', fontWeight: 600, textDecoration: 'underline' }}
-                                                        >
-                                                            {language === 'ur' ? 'آجر کی پروفائل دیکھیں' : 'View Employer Profile'}
-                                                        </button>
-                                                    </div>
+                                                    <h3 style={{ margin: 0, color: '#1e293b', fontSize: '1.1rem', fontWeight: 700 }}>{req.employer?.first_name} {req.employer?.last_name}</h3>
+                                                    <p style={{ margin: 0, color: '#64748b', fontSize: '0.8rem' }}>Potential Employer</p>
+                                                    <button 
+                                                        onClick={() => navigate(`/profile/${req.employer_id}`)}
+                                                        style={{ background: 'none', border: 'none', color: '#4f46e5', fontSize: '0.8rem', padding: 0, cursor: 'pointer', fontWeight: 600, textDecoration: 'underline' }}
+                                                    >
+                                                        {language === 'ur' ? 'آجر کی پروفائل دیکھیں' : 'View Employer Profile'}
+                                                    </button>
                                                 </div>
                                             </div>
 
-                                            <div style={{ background: 'rgba(255,255,255,0.03)', borderRadius: '20px', padding: '15px', marginBottom: '1.5rem', border: '1px solid rgba(255,255,255,0.05)' }}>
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', color: '#cbd5e1', fontSize: '1rem', fontWeight: 600 }}>
-                                                    <span style={{ fontSize: '1.2rem' }}>📍</span> {req.travel?.from_city}
-                                                    <span style={{ color: '#64748b' }}>➔</span>
-                                                    <span style={{ fontSize: '1.2rem' }}>🎯</span> {req.travel?.to_city}
+                                            <div style={{ background: '#eef2ff', borderRadius: '12px', padding: '12px', marginBottom: '1rem', border: '1px solid #e0e7ff' }}>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: '#334155', fontSize: '0.9rem', fontWeight: 600 }}>
+                                                    <span>📍</span> {req.travel?.from_city}
+                                                    <span style={{ color: '#94a3b8' }}>➔</span>
+                                                    <span>🎯</span> {req.travel?.to_city}
                                                 </div>
                                             </div>
 
-                                            <div style={{ position: 'relative', marginBottom: '2rem' }}>
-                                                <div style={{ position: 'absolute', left: '-10px', top: '0', bottom: '0', width: '4px', background: '#4f46e5', borderRadius: '2px' }}></div>
-                                                <p style={{ margin: 0, paddingLeft: '15px', color: '#e2e8f0', fontSize: '1rem', fontStyle: 'italic', lineHeight: '1.6' }}>
+                                            <div style={{ position: 'relative', marginBottom: '1.5rem', paddingLeft: '14px', borderLeft: '3px solid #4f46e5' }}>
+                                                <p style={{ margin: 0, color: '#475569', fontSize: '0.9rem', fontStyle: 'italic', lineHeight: '1.6' }}>
                                                     "{req.message || "I'm interested in hiring you for your travel period."}"
                                                 </p>
                                             </div>
 
                                             {req.status === 'Pending' && (
-                                                <div style={{ display: 'flex', gap: '12px' }}>
+                                                <div style={{ display: 'flex', gap: '10px' }}>
                                                     <button 
                                                         onClick={() => handleTERequestStatus(req.id, 'Accepted')}
-                                                        style={{ flex: 2, padding: '14px', borderRadius: '18px', border: 'none', background: 'linear-gradient(135deg, #10b981, #059669)', color: 'white', fontWeight: 800, fontSize: '1rem', cursor: 'pointer', boxShadow: '0 10px 20px rgba(16,185,129,0.3)', transition: 'all 0.3s ease' }}
+                                                        style={{ flex: 2, padding: '12px', borderRadius: '12px', border: 'none', background: '#10b981', color: 'white', fontWeight: 700, fontSize: '0.9rem', cursor: 'pointer', transition: 'background 0.2s' }}
                                                     >
-                                                        {language === 'ur' ? 'قبول کریں' : 'Accept Offer'}
+                                                        {language === 'ur' ? 'قبول کریں' : '✓ Accept Offer'}
                                                     </button>
                                                     <button 
                                                         onClick={() => handleTERequestStatus(req.id, 'Rejected')}
-                                                        style={{ flex: 1, padding: '14px', borderRadius: '18px', border: '1px solid rgba(239,68,68,0.2)', background: 'rgba(239,68,68,0.05)', color: '#f87171', fontWeight: 800, fontSize: '1rem', cursor: 'pointer', transition: 'all 0.3s ease' }}
+                                                        style={{ flex: 1, padding: '12px', borderRadius: '12px', border: '1px solid #fecaca', background: '#fff5f5', color: '#ef4444', fontWeight: 700, fontSize: '0.9rem', cursor: 'pointer', transition: 'background 0.2s' }}
                                                     >
                                                         {language === 'ur' ? 'مسترد' : 'Decline'}
                                                     </button>
@@ -1318,12 +1307,12 @@ const BlueCollarDashboard = ({ user, logout }) => {
                                     ))}
                                 </div>
                             ) : (
-                                <div style={{ textAlign: 'center', padding: '4rem 2rem', background: 'rgba(255,255,255,0.02)', borderRadius: '30px', border: '1px dashed rgba(255,255,255,0.1)' }}>
-                                    <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>💼</div>
-                                    <h3 style={{ color: '#94a3b8', margin: 0 }}>
+                                <div style={{ textAlign: 'center', padding: '3rem 2rem', background: '#f8fafc', borderRadius: '16px', border: '1px dashed #e2e8f0' }}>
+                                    <div style={{ fontSize: '2.5rem', marginBottom: '0.75rem' }}>💼</div>
+                                    <h3 style={{ color: '#475569', margin: 0, fontSize: '1.1rem' }}>
                                         {language === 'ur' ? 'ابھی تک کوئی درخواست نہیں ملی' : 'No hire requests yet.'}
                                     </h3>
-                                    <p style={{ color: '#64748b', fontSize: '0.9rem', marginTop: '5px' }}>
+                                    <p style={{ color: '#94a3b8', fontSize: '0.85rem', marginTop: '6px' }}>
                                         {language === 'ur' ? 'اپنی پروفائل مکمل رکھیں تاکہ آجر آپ سے رابطہ کریں' : 'Keep your travel profile updated to attract employers!'}
                                     </p>
                                 </div>
@@ -1765,186 +1754,156 @@ const BlueCollarDashboard = ({ user, logout }) => {
                 )}
                 {/* -------------------- INTERNATIONAL JOBS TAB -------------------- */}
                 {activeTab === 'international-jobs' && (
-                    <section className="bc-search-section" style={{ padding: '1rem' }}>
-                        {/* Premium Hero Banner */}
+                    <section style={{ padding: '2rem', background: '#f1f5f9', minHeight: '100%' }}>
+                        
+                        {/* High-End SaaS Hero Banner */}
                         <div style={{ 
-                            background: 'linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #312e81 100%)',
-                            padding: '4rem 2rem',
-                            borderRadius: '30px',
-                            marginBottom: '2.5rem',
+                            background: 'linear-gradient(135deg, #312e81 0%, #4f46e5 100%)', 
+                            borderRadius: '16px',
+                            padding: '3rem', 
+                            marginBottom: '2rem',
+                            display: 'flex', 
+                            flexDirection: 'column', 
+                            boxShadow: '0 10px 25px -5px rgba(79, 70, 229, 0.4)',
                             position: 'relative',
-                            overflow: 'hidden',
-                            border: '1px solid rgba(255,255,255,0.08)',
-                            boxShadow: '0 20px 50px rgba(0,0,0,0.3)',
-                            textAlign: 'center'
+                            overflow: 'hidden'
                         }}>
-                            {/* Decorative Elements */}
-                            <div style={{ position: 'absolute', top: '-20%', left: '-10%', width: '400px', height: '400px', background: 'radial-gradient(circle, rgba(79,70,229,0.2) 0%, transparent 70%)', filter: 'blur(60px)' }}></div>
-                            <div style={{ position: 'absolute', bottom: '-10%', right: '-5%', width: '300px', height: '300px', background: 'radial-gradient(circle, rgba(16,185,129,0.1) 0%, transparent 70%)', filter: 'blur(50px)' }}></div>
-                            
-                            <div style={{ position: 'relative', zIndex: 1 }}>
-                                <div style={{ display: 'inline-flex', padding: '12px', background: 'rgba(255,255,255,0.05)', borderRadius: '20px', marginBottom: '1.5rem', border: '1px solid rgba(255,255,255,0.1)' }}>
-                                    <span style={{ fontSize: '2.5rem' }}>🌍</span>
-                                </div>
-                                <h1 style={{ 
-                                    fontSize: '3rem', 
-                                    fontWeight: 800, 
-                                    marginBottom: '1rem', 
-                                    letterSpacing: '-1px',
-                                    background: 'linear-gradient(to right, #fff, #94a3b8)',
-                                    WebkitBackgroundClip: 'text',
-                                    WebkitTextFillColor: 'transparent'
-                                }}>
-                                    {language === 'ur' ? 'بیرونی روزگار کے مواقع' : 'Global Career Pathways'}
-                                </h1>
-                                <p style={{ fontSize: '1.2rem', color: '#94a3b8', maxWidth: '600px', margin: '0 auto 2.5rem' }}>
-                                    {language === 'ur' ? 'دنیا بھر میں بہترین تنخواہوں اور ویزا سپانسرشپ والی نوکریاں تلاش کریں' : 'Connect with high-paying international employers offering visa sponsorship and relocation support'}
-                                </p>
+                            {/* Subtle Background Pattern */}
+                            <svg style={{ position: 'absolute', right: 0, top: 0, height: '100%', opacity: 0.1 }} viewBox="0 0 100 100" preserveAspectRatio="none">
+                                <polygon fill="white" points="0,100 100,0 100,100"/>
+                            </svg>
 
-                                {/* Modern Search Bar */}
-                                <div style={{ 
-                                    maxWidth: '800px', 
-                                    margin: '0 auto',
-                                    display: 'flex',
-                                    gap: '10px',
-                                    background: 'rgba(255,255,255,0.05)',
-                                    padding: '10px',
-                                    borderRadius: '20px',
-                                    backdropFilter: 'blur(20px)',
-                                    border: '1px solid rgba(255,255,255,0.1)',
-                                    boxShadow: '0 10px 30px rgba(0,0,0,0.2)'
-                                }}>
+                            <div style={{ position: 'relative', zIndex: 1, maxWidth: '800px' }}>
+                                <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: 'rgba(255,255,255,0.1)', padding: '6px 12px', borderRadius: '20px', marginBottom: '1.5rem', border: '1px solid rgba(255,255,255,0.2)', backdropFilter: 'blur(4px)' }}>
+                                    <svg width="16" height="16" fill="none" stroke="#fff" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"></path></svg>
+                                    <span style={{ color: '#fff', fontSize: '0.85rem', fontWeight: 600, letterSpacing: '0.5px' }}>PREMIUM OPPORTUNITIES</span>
+                                </div>
+                                <h1 style={{ color: '#ffffff', fontSize: '2.5rem', fontWeight: 800, marginBottom: '1rem', letterSpacing: '-0.5px', lineHeight: 1.2 }}>
+                                    {language === 'ur' ? 'عالمی کیریئر کے مواقع' : 'Global Career Pathways'}
+                                </h1>
+                                <p style={{ color: '#e0e7ff', fontSize: '1.1rem', marginBottom: '2rem', maxWidth: '600px', lineHeight: 1.5 }}>
+                                    {language === 'ur' ? 'دنیا بھر میں بہترین تنخواہوں اور ویزا سپانسرشپ والی نوکریاں تلاش کریں' : 'Connect with top-tier international employers offering competitive salaries, visa sponsorship, and relocation support.'}
+                                </p>
+                                
+                                <div style={{ display: 'flex', gap: '12px', width: '100%', maxWidth: '600px' }}>
                                     <div style={{ flex: 1, position: 'relative' }}>
-                                        <span style={{ position: 'absolute', left: '15px', top: '50%', transform: 'translateY(-50%)', opacity: 0.5 }}>🔍</span>
+                                        <svg style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: '#64748b' }} width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
                                         <input
                                             type="text"
-                                            placeholder={language === 'ur' ? 'پیشہ یا ملک تلاش کریں...' : 'Search by job title or country...'}
+                                            placeholder={language === 'ur' ? 'پیشہ، ہنر یا ملک تلاش کریں...' : 'Search roles, skills, or countries...'}
                                             value={intlSearchTerm}
                                             onChange={(e) => setIntlSearchTerm(e.target.value)}
-                                            style={{ 
-                                                width: '100%', 
-                                                padding: '14px 14px 14px 45px', 
-                                                borderRadius: '14px', 
-                                                border: 'none', 
-                                                background: 'rgba(0,0,0,0.2)', 
-                                                color: 'white',
-                                                fontSize: '1rem',
-                                                outline: 'none'
-                                            }}
+                                            style={{ width: '100%', padding: '16px 20px 16px 48px', borderRadius: '12px', border: 'none', fontSize: '1rem', color: '#0f172a', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)', outline: 'none' }}
                                         />
                                     </div>
-                                    <button className="btn btn-primary" style={{ padding: '0 2rem', borderRadius: '14px', fontWeight: 600 }}>
+                                    <button 
+                                        className="btn btn-primary"
+                                        style={{ padding: '0 2rem', borderRadius: '12px', fontWeight: 600, background: '#ffffff', color: '#4f46e5', border: 'none', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)' }}
+                                    >
                                         {language === 'ur' ? 'تلاش کریں' : 'Search'}
                                     </button>
                                 </div>
                             </div>
                         </div>
 
-                        {/* Results Grid */}
-                        <div className="bc-jobs-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: '1.5rem' }}>
+                        {/* Job Cards Grid */}
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))', gap: '1.5rem' }}>
                             {loadingIntlJobs ? (
-                                <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '5rem' }}>
-                                    <div className="loading-spinner" style={{ width: '50px', height: '50px', border: '4px solid rgba(255,255,255,0.1)', borderTopColor: '#4f46e5', borderRadius: '50%', animation: 'spin 1s linear infinite', margin: '0 auto 1.5rem' }}></div>
-                                    <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
-                                    <p style={{ color: '#94a3b8', fontSize: '1.1rem' }}>{language === 'ur' ? 'نوکریاں تلاش کی جا رہی ہیں...' : 'Scouting international opportunities...'}</p>
+                                <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '4rem', background: '#ffffff', borderRadius: '16px', border: '1px solid #e2e8f0' }}>
+                                    <div className="loading-spinner" style={{ margin: '0 auto 1rem', borderTopColor: '#4f46e5' }}></div>
+                                    <p style={{ color: '#64748b', fontWeight: 500 }}>{language === 'ur' ? 'نوکریاں تلاش کی جا رہی ہیں...' : 'Loading opportunities...'}</p>
                                 </div>
                             ) : filteredIntlJobs.length > 0 ? (
                                 filteredIntlJobs.map(job => (
-                                    <div key={job.id} className="bc-job-card" style={{ 
-                                        background: 'linear-gradient(145deg, rgba(30,41,59,0.7), rgba(15,23,42,0.8))',
-                                        border: '1px solid rgba(255,255,255,0.06)',
-                                        borderRadius: '24px',
-                                        padding: '1.8rem',
+                                    <div key={job.id} style={{ 
+                                        background: '#ffffff',
+                                        borderRadius: '16px',
+                                        padding: '1.75rem',
                                         display: 'flex',
                                         flexDirection: 'column',
-                                        gap: '1.2rem',
-                                        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                                        position: 'relative',
-                                        overflow: 'hidden',
-                                        boxShadow: '0 10px 20px rgba(0,0,0,0.1)'
+                                        gap: '1.25rem',
+                                        border: '1px solid #e2e8f0',
+                                        boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+                                        transition: 'all 0.2s ease'
                                     }}
-                                    onMouseOver={e => { e.currentTarget.style.transform = 'translateY(-8px)'; e.currentTarget.style.borderColor = 'rgba(79,70,229,0.4)'; e.currentTarget.style.boxShadow = '0 20px 40px rgba(0,0,0,0.4)'; }}
-                                    onMouseOut={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)'; e.currentTarget.style.boxShadow = '0 10px 20px rgba(0,0,0,0.1)'; }}>
+                                    onMouseOver={e => { e.currentTarget.style.transform = 'translateY(-4px)'; e.currentTarget.style.boxShadow = '0 12px 20px -3px rgba(0,0,0,0.1)'; e.currentTarget.style.borderColor = '#cbd5e1'; }}
+                                    onMouseOut={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.05)'; e.currentTarget.style.borderColor = '#e2e8f0'; }}>
                                         
-                                        {/* Top Accent Line */}
-                                        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '4px', background: 'linear-gradient(90deg, #4f46e5, #10b981)' }}></div>
-
                                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                                             <div>
-                                                <h3 style={{ margin: '0 0 5px 0', color: '#f8fafc', fontSize: '1.3rem', fontWeight: 700 }}>{job.title}</h3>
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#64748b', fontSize: '0.85rem' }}>
-                                                    
+                                                <h3 style={{ margin: '0 0 0.5rem 0', color: '#0f172a', fontSize: '1.25rem', fontWeight: 700, lineHeight: 1.3 }}>{job.title}</h3>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                                    <div style={{ background: '#f1f5f9', padding: '4px', borderRadius: '6px' }}>
+                                                        <svg width="14" height="14" fill="none" stroke="#475569" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg>
+                                                    </div>
                                                     <span 
                                                         onClick={(e) => { e.stopPropagation(); navigate(`/profile/${job.employer_id}`); }}
-                                                        style={{ cursor: 'pointer', color: '#818cf8', display: 'flex', alignItems: 'center', gap: '4px' }}
-                                                        title="View Employer Profile"
+                                                        style={{ cursor: 'pointer', color: '#4f46e5', fontSize: '0.9rem', fontWeight: 600, transition: 'color 0.2s' }}
+                                                        onMouseOver={e => e.currentTarget.style.color = '#312e81'}
+                                                        onMouseOut={e => e.currentTarget.style.color = '#4f46e5'}
                                                     >
-                                                        🏢 {job.employer ? `${job.employer.first_name} ${job.employer.last_name}` : 'Verified Employer'}
-                                                        <small style={{ opacity: 0.7, fontSize: '0.65rem' }}> (View Profile 👤)</small>
+                                                        {job.employer ? `${job.employer.first_name} ${job.employer.last_name}` : 'Verified Employer'}
                                                     </span>
                                                 </div>
                                             </div>
                                             {job.visa_sponsored && (
-                                                <span style={{ 
-                                                    background: 'rgba(16,185,129,0.15)', 
-                                                    color: '#10b981', 
-                                                    padding: '6px 12px', 
-                                                    borderRadius: '12px', 
-                                                    fontSize: '0.75rem', 
-                                                    fontWeight: 700,
-                                                    border: '1px solid rgba(16,185,129,0.2)',
-                                                    display: 'flex',
-                                                    alignItems: 'center',
-                                                    gap: '4px'
-                                                }}>
-                                                    ✈️ {language === 'ur' ? 'ویزہ اسپانسر' : 'Visa Sponsored'}
+                                                <span style={{ background: '#ecfdf5', color: '#059669', padding: '0.35rem 0.75rem', borderRadius: '8px', fontSize: '0.75rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                                                    <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                                    {language === 'ur' ? 'ویزہ اسپانسر' : 'Visa Sponsored'}
                                                 </span>
                                             )}
                                         </div>
 
-                                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
-                                            <div style={{ background: 'rgba(255,255,255,0.05)', padding: '8px 12px', borderRadius: '12px', fontSize: '0.9rem', color: '#e2e8f0', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                                📍 {job.city ? `${job.city}, ` : ''}{job.country}
+                                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem' }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: '#f8fafc', padding: '0.5rem 0.75rem', borderRadius: '8px', border: '1px solid #f1f5f9' }}>
+                                                <svg width="16" height="16" fill="none" stroke="#64748b" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                                                <span style={{ color: '#475569', fontSize: '0.85rem', fontWeight: 500 }}>{job.city ? `${job.city}, ` : ''}{job.country}</span>
                                             </div>
-                                            <div style={{ background: 'rgba(79,70,229,0.1)', padding: '8px 12px', borderRadius: '12px', fontSize: '0.9rem', color: '#818cf8', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                                💰 {job.currency} {job.salary}
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: '#eef2ff', padding: '0.5rem 0.75rem', borderRadius: '8px', border: '1px solid #e0e7ff' }}>
+                                                <svg width="16" height="16" fill="none" stroke="#4f46e5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                                <span style={{ color: '#312e81', fontSize: '0.85rem', fontWeight: 700 }}>{job.currency} {job.salary}</span>
                                             </div>
                                         </div>
 
-                                        <p style={{ fontSize: '0.95rem', color: '#94a3b8', lineHeight: 1.6, margin: 0, flex: 1 }}>
+                                        <p style={{ fontSize: '0.9rem', color: '#64748b', lineHeight: 1.6, margin: 0, flex: 1 }}>
                                             {job.description?.length > 120 ? job.description.substring(0, 120) + '...' : job.description}
                                         </p>
 
                                         <button 
-                                            className="btn btn-primary" 
                                             style={{ 
                                                 width: '100%', 
-                                                padding: '14px', 
-                                                borderRadius: '16px', 
-                                                fontWeight: 700, 
-                                                fontSize: '1rem',
-                                                background: 'linear-gradient(135deg, #4f46e5 0%, #4338ca 100%)',
-                                                boxShadow: '0 4px 15px rgba(79,70,229,0.3)',
-                                                border: 'none'
+                                                padding: '0.85rem', 
+                                                borderRadius: '10px', 
+                                                fontWeight: 600, 
+                                                fontSize: '0.95rem',
+                                                marginTop: 'auto',
+                                                background: '#4f46e5',
+                                                color: '#ffffff',
+                                                border: 'none',
+                                                cursor: 'pointer',
+                                                transition: 'all 0.2s',
+                                                display: 'flex',
+                                                justifyContent: 'center',
+                                                alignItems: 'center',
+                                                gap: '0.5rem',
+                                                boxShadow: '0 4px 6px -1px rgba(79,70,229,0.2)'
                                             }} 
+                                            onMouseOver={e => { e.currentTarget.style.background = '#4338ca'; e.currentTarget.style.boxShadow = '0 6px 8px -1px rgba(79,70,229,0.3)'; }}
+                                            onMouseOut={e => { e.currentTarget.style.background = '#4f46e5'; e.currentTarget.style.boxShadow = '0 4px 6px -1px rgba(79,70,229,0.2)'; }}
                                             onClick={() => handleApplyIntlJob(job.id)}
                                         >
-                                            {language === 'ur' ? 'درخواست جمع کروائیں' : 'Apply Now'}
+                                            {language === 'ur' ? 'درخواست دیں' : 'Apply Now'}
+                                            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
                                         </button>
                                     </div>
                                 ))
                             ) : (
-                                <div style={{ 
-                                    gridColumn: '1 / -1', 
-                                    textAlign: 'center', 
-                                    padding: '5rem 2rem', 
-                                    background: 'rgba(255,255,255,0.02)', 
-                                    borderRadius: '30px',
-                                    border: '1px dashed rgba(255,255,255,0.1)'
-                                }}>
-                                    <div style={{ fontSize: '4rem', marginBottom: '1.5rem' }}>🛸</div>
-                                    <h3 style={{ fontSize: '1.5rem', color: '#e2e8f0', marginBottom: '0.5rem' }}>{language === 'ur' ? 'کوئی نوکری نہیں ملی' : 'No Global Openings Found'}</h3>
-                                    <p style={{ color: '#64748b' }}>{language === 'ur' ? 'براہ کرم دوبارہ کوشش کریں یا اپنی تلاش کے الفاظ تبدیل کریں' : 'Check back soon! New international roles are posted daily.'}</p>
+                                <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '6rem 2rem', background: '#ffffff', borderRadius: '16px', border: '1px solid #e2e8f0' }}>
+                                    <div style={{ display: 'inline-flex', padding: '1rem', background: '#f1f5f9', borderRadius: '50%', marginBottom: '1.5rem' }}>
+                                        <svg style={{ color: '#94a3b8' }} width="48" height="48" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                                    </div>
+                                    <h3 style={{ fontSize: '1.35rem', color: '#0f172a', fontWeight: 700, marginBottom: '0.5rem' }}>{language === 'ur' ? 'کوئی نوکری نہیں ملی' : 'No Global Openings Found'}</h3>
+                                    <p style={{ color: '#64748b', fontSize: '1rem', maxWidth: '400px', margin: '0 auto' }}>{language === 'ur' ? 'براہ کرم دوبارہ کوشش کریں یا اپنی تلاش کے الفاظ تبدیل کریں' : 'We couldn\'t find any roles matching your search criteria.'}</p>
                                 </div>
                             )}
                         </div>

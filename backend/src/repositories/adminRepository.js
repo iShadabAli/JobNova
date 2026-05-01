@@ -66,11 +66,13 @@ const adminRepository = {
 
     // ---- ANALYTICS ----
     getPlatformStats: async () => {
-        const [usersRes, jobsRes, appsRes, reviewsRes] = await Promise.all([
+        const [usersRes, jobsRes, appsRes, reviewsRes, bookingsRes, intlJobsRes] = await Promise.all([
             supabase.from('users').select('id, role', { count: 'exact' }),
             supabase.from('jobs').select('id, status', { count: 'exact' }),
             supabase.from('applications').select('id, status', { count: 'exact' }),
-            supabase.from('reviews').select('id', { count: 'exact', head: true })
+            supabase.from('reviews').select('id', { count: 'exact', head: true }),
+            supabase.from('bookings').select('id, status', { count: 'exact' }),
+            supabase.from('international_jobs').select('id', { count: 'exact', head: true })
         ]);
 
         if (usersRes.error) throw usersRes.error;
@@ -92,15 +94,23 @@ const adminRepository = {
         const appStatusCounts = {};
         apps.forEach(a => { appStatusCounts[a.status] = (appStatusCounts[a.status] || 0) + 1; });
 
+        // Booking status distribution
+        const bookings = bookingsRes.data || [];
+        const bookingStatusCounts = {};
+        bookings.forEach(b => { bookingStatusCounts[b.status] = (bookingStatusCounts[b.status] || 0) + 1; });
+
         return {
             totalUsers: users.length,
             totalJobs: jobs.length,
             totalApplications: apps.length,
             totalReviews: reviewsRes.count || 0,
+            totalBookings: bookings.length,
+            totalIntlJobs: intlJobsRes.count || 0,
             roleCounts,
             activeJobs,
             closedJobs,
-            appStatusCounts
+            appStatusCounts,
+            bookingStatusCounts
         };
     },
 

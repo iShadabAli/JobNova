@@ -61,7 +61,7 @@ function App() {
             <LanguageProvider>
                 <Router>
                     <div className="app">
-                        <Toaster position="top-center" />
+                        <Toaster position="top-center" containerStyle={{ zIndex: 99999 }} />
                         <Routes>
                         <Route path="/login" element={<Login />} />
                         <Route path="/register" element={<Register />} />

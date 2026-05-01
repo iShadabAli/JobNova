@@ -260,6 +260,7 @@ const WhiteCollarDashboard = ({ user, logout }) => {
             fetchMyTravel();
             fetchTERequests();
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [activeTab, fetchTERequests]);
 
     const handleTERequestStatus = async (requestId, status) => {

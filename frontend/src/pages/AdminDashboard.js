@@ -9,6 +9,8 @@ const AdminDashboard = ({ user, logout }) => {
     const [logs, setLogs] = useState([]);
     const [complaints, setComplaints] = useState([]);
     const [verifications, setVerifications] = useState([]);
+    const [contactMessages, setContactMessages] = useState([]);
+    const [internationalJobs, setInternationalJobs] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [actionLoading, setActionLoading] = useState(null);
@@ -82,6 +84,26 @@ const AdminDashboard = ({ user, logout }) => {
         }
     };
 
+    const fetchContactMessages = async () => {
+        try {
+            const res = await fetch(`${API_URL}/contact`, { headers: getHeaders() });
+            const result = await res.json();
+            if (Array.isArray(result)) setContactMessages(result);
+        } catch (err) {
+            console.error('Error fetching contact messages:', err);
+        }
+    };
+
+    const fetchInternationalJobs = async () => {
+        try {
+            const res = await fetch(`${API_URL}/international-jobs`, { headers: getHeaders() });
+            const result = await res.json();
+            if (result.success) setInternationalJobs(result.data);
+        } catch (err) {
+            console.error('Error fetching international jobs:', err);
+        }
+    };
+
     // ---- COMPLAINT ACTION ----
     const handleUpdateComplaintStatus = async (id, status) => {
         const notes = prompt(`Enter admin notes for marking as ${status} (Optional):`);
@@ -107,7 +129,7 @@ const AdminDashboard = ({ user, logout }) => {
     useEffect(() => {
         const loadAll = async () => {
             setLoading(true);
-            await Promise.all([fetchStats(), fetchUsers(), fetchJobs(), fetchLogs(), fetchComplaints(), fetchVerifications()]);
+            await Promise.all([fetchStats(), fetchUsers(), fetchJobs(), fetchLogs(), fetchComplaints(), fetchVerifications(), fetchContactMessages(), fetchInternationalJobs()]);
             setLoading(false);
         };
         loadAll();
@@ -173,6 +195,45 @@ const AdminDashboard = ({ user, logout }) => {
             }
         } catch (err) {
             console.error('Error deleting job:', err);
+        } finally {
+            setActionLoading(null);
+        }
+    };
+
+    const handleUpdateMessageStatus = async (id, status) => {
+        setActionLoading(id);
+        try {
+            const res = await fetch(`${API_URL}/contact/${id}/status`, {
+                method: 'PUT',
+                headers: getHeaders(),
+                body: JSON.stringify({ status })
+            });
+            const result = await res.json();
+            if (result.message) {
+                setContactMessages(prev => prev.map(m => m.id === id ? { ...m, status } : m));
+            }
+        } catch (err) {
+            console.error('Error updating message status:', err);
+        } finally {
+            setActionLoading(null);
+        }
+    };
+
+    const handleDeleteInternationalJob = async (jobId) => {
+        setConfirmModal({ show: false, jobId: null, jobTitle: '', type: '' });
+        setActionLoading(jobId);
+        try {
+            const res = await fetch(`${API_URL}/international-jobs/${jobId}`, {
+                method: 'DELETE',
+                headers: getHeaders()
+            });
+            const result = await res.json();
+            if (result.success) {
+                setInternationalJobs(prev => prev.filter(j => j.id !== jobId));
+                fetchStats();
+            }
+        } catch (err) {
+            console.error('Error deleting international job:', err);
         } finally {
             setActionLoading(null);
         }
@@ -247,9 +308,11 @@ const AdminDashboard = ({ user, logout }) => {
                 {[
                     { key: 'overview', label: '📊 Overview', icon: '' },
                     { key: 'users', label: '👥 Users', icon: '' },
-                    { key: 'jobs', label: '💼 Jobs', icon: '' },
+                    { key: 'jobs', label: '💼 Local Jobs', icon: '' },
+                    { key: 'intl_jobs', label: '🌍 Intl Jobs', icon: '' },
                     { key: 'complaints', label: '⚠️ Complaints', icon: '' },
                     { key: 'verifications', label: '🛡️ Verifications', icon: '' },
+                    { key: 'inbox', label: '📥 Inbox', icon: '' },
                     { key: 'logs', label: '📜 Logs', icon: '' }
                 ].map(tab => (
                     <button
@@ -281,12 +344,14 @@ const AdminDashboard = ({ user, logout }) => {
                     <div>
                         {/* Stats Cards */}
                         <div style={{
-                            display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+                            display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
                             gap: '20px', marginBottom: '32px'
                         }}>
                             {[
                                 { label: 'Total Users', value: stats.totalUsers, icon: '👥', color: '#3b82f6' },
-                                { label: 'Total Jobs', value: stats.totalJobs, icon: '💼', color: '#8b5cf6' },
+                                { label: 'Total Local Jobs', value: stats.totalJobs, icon: '💼', color: '#8b5cf6' },
+                                { label: 'Total Intl Jobs', value: stats.totalIntlJobs || 0, icon: '🌍', color: '#6366f1' },
+                                { label: 'Bookings', value: stats.totalBookings || 0, icon: '🗓️', color: '#ec4899' },
                                 { label: 'Applications', value: stats.totalApplications, icon: '📋', color: '#10b981' },
                                 { label: 'Reviews', value: stats.totalReviews, icon: '⭐', color: '#f59e0b' }
                             ].map((card, i) => (
@@ -785,6 +850,179 @@ const AdminDashboard = ({ user, logout }) => {
                         )}
                     </div>
                 )}
+
+                {/* ======== INTERNATIONAL JOBS TAB ======== */}
+                {activeTab === 'intl_jobs' && (
+                    <div>
+                        <div style={{ marginBottom: '20px' }}>
+                            <input
+                                type="text"
+                                placeholder="Search international jobs by title, location, or employer..."
+                                value={searchTerm}
+                                onChange={e => setSearchTerm(e.target.value)}
+                                style={{
+                                    width: '100%', maxWidth: '400px', padding: '10px 16px',
+                                    background: '#1e293b', border: '1px solid #334155', borderRadius: '8px',
+                                    color: '#e2e8f0', fontSize: '0.9rem', outline: 'none'
+                                }}
+                            />
+                        </div>
+
+                        <div style={{ overflowX: 'auto' }}>
+                            <table style={{
+                                width: '100%', borderCollapse: 'collapse',
+                                background: '#1e293b', borderRadius: '12px', overflow: 'hidden'
+                            }}>
+                                <thead>
+                                    <tr style={{ background: '#334155' }}>
+                                        {['Title', 'Country', 'Employer', 'Visa Sponsored', 'Posted', 'Action'].map(h => (
+                                            <th key={h} style={{
+                                                padding: '12px 16px', textAlign: 'left',
+                                                color: '#94a3b8', fontSize: '0.8rem', fontWeight: '600',
+                                                textTransform: 'uppercase', letterSpacing: '0.5px'
+                                            }}>{h}</th>
+                                        ))}
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {internationalJobs.filter(j =>
+                                        `${j.title} ${j.country} ${j.employer?.first_name}`.toLowerCase().includes(searchTerm.toLowerCase())
+                                    ).map(j => (
+                                        <tr key={j.id} style={{ borderBottom: '1px solid #334155' }}>
+                                            <td style={{ padding: '12px 16px', color: '#f8fafc', fontWeight: '500' }}>{j.title}</td>
+                                            <td style={{ padding: '12px 16px', color: '#94a3b8', fontSize: '0.85rem' }}>{j.country}</td>
+                                            <td style={{ padding: '12px 16px', color: '#94a3b8', fontSize: '0.85rem' }}>
+                                                {j.employer ? `${j.employer.first_name} ${j.employer.last_name || ''}` : 'Unknown'}
+                                            </td>
+                                            <td style={{ padding: '12px 16px' }}>
+                                                <span style={{
+                                                    padding: '4px 10px', borderRadius: '12px', fontSize: '0.75rem',
+                                                    fontWeight: '600', color: j.visa_sponsored ? '#86efac' : '#94a3b8',
+                                                    background: j.visa_sponsored ? '#052e16' : '#334155'
+                                                }}>
+                                                    {j.visa_sponsored ? '✅ Yes' : '❌ No'}
+                                                </span>
+                                            </td>
+                                            <td style={{ padding: '12px 16px', color: '#94a3b8', fontSize: '0.85rem' }}>
+                                                {new Date(j.created_at).toLocaleDateString()}
+                                            </td>
+                                            <td style={{ padding: '12px 16px' }}>
+                                                <button
+                                                    onClick={() => setConfirmModal({ show: true, jobId: j.id, jobTitle: j.title, type: 'intl' })}
+                                                    disabled={actionLoading === j.id}
+                                                    style={{
+                                                        padding: '6px 14px', border: 'none', borderRadius: '6px',
+                                                        fontSize: '0.78rem', fontWeight: '500', cursor: 'pointer',
+                                                        background: '#dc2626', color: 'white',
+                                                        opacity: actionLoading === j.id ? 0.6 : 1
+                                                    }}
+                                                >
+                                                    {actionLoading === j.id ? '...' : '🗑 Delete'}
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                        {internationalJobs.length === 0 && (
+                            <p style={{ textAlign: 'center', color: '#64748b', padding: '2rem' }}>No international jobs found.</p>
+                        )}
+                    </div>
+                )}
+
+                {/* ======== INBOX TAB ======== */}
+                {activeTab === 'inbox' && (
+                    <div>
+                        <div style={{ marginBottom: '20px' }}>
+                            <input
+                                type="text"
+                                placeholder="Search messages by name, email, or content..."
+                                value={searchTerm}
+                                onChange={e => setSearchTerm(e.target.value)}
+                                style={{
+                                    width: '100%', maxWidth: '400px', padding: '10px 16px',
+                                    background: '#1e293b', border: '1px solid #334155', borderRadius: '8px',
+                                    color: '#e2e8f0', fontSize: '0.9rem', outline: 'none'
+                                }}
+                            />
+                        </div>
+
+                        <div style={{ overflowX: 'auto' }}>
+                            <table style={{
+                                width: '100%', borderCollapse: 'collapse',
+                                background: '#1e293b', borderRadius: '12px', overflow: 'hidden'
+                            }}>
+                                <thead>
+                                    <tr style={{ background: '#334155' }}>
+                                        {['Date', 'Sender', 'Message', 'Status', 'Actions'].map(h => (
+                                            <th key={h} style={{
+                                                padding: '12px 16px', textAlign: 'left',
+                                                color: '#94a3b8', fontSize: '0.8rem', fontWeight: '600',
+                                                textTransform: 'uppercase', letterSpacing: '0.5px'
+                                            }}>{h}</th>
+                                        ))}
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {contactMessages.filter(m =>
+                                        `${m.name} ${m.email} ${m.message}`.toLowerCase().includes(searchTerm.toLowerCase())
+                                    ).map(m => (
+                                        <tr key={m.id} style={{ borderBottom: '1px solid #334155', background: (m.status || 'unread').toLowerCase() === 'unread' ? 'rgba(59, 130, 246, 0.05)' : 'transparent' }}>
+                                            <td style={{ padding: '12px 16px', color: '#94a3b8', fontSize: '0.85rem' }}>
+                                                {new Date(m.created_at).toLocaleDateString()}
+                                            </td>
+                                            <td style={{ padding: '12px 16px' }}>
+                                                <div style={{ color: '#f8fafc', fontWeight: '500' }}>{m.name}</div>
+                                                <div style={{ color: '#94a3b8', fontSize: '0.8rem' }}>{m.email}</div>
+                                                <div style={{ color: '#94a3b8', fontSize: '0.8rem' }}>{m.phone || '—'}</div>
+                                            </td>
+                                            <td style={{ padding: '12px 16px', maxWidth: '300px' }}>
+                                                <div style={{ color: '#cbd5e1', fontSize: '0.85rem', wordWrap: 'break-word', whiteSpace: 'pre-wrap' }}>
+                                                    {m.message}
+                                                </div>
+                                            </td>
+                                            <td style={{ padding: '12px 16px' }}>
+                                                <span style={{
+                                                    padding: '4px 10px', borderRadius: '12px', fontSize: '0.75rem',
+                                                    fontWeight: '600', color: 'white', textTransform: 'capitalize',
+                                                    background: (m.status || 'unread').toLowerCase() === 'unread' ? '#d97706' : (m.status || '').toLowerCase() === 'resolved' ? '#16a34a' : '#3b82f6'
+                                                }}>
+                                                    {m.status || 'Unread'}
+                                                </span>
+                                            </td>
+                                            <td style={{ padding: '12px 16px' }}>
+                                                <div style={{ display: 'flex', gap: '8px' }}>
+                                                    {(m.status || '').toLowerCase() !== 'resolved' && (
+                                                        <button
+                                                            onClick={() => handleUpdateMessageStatus(m.id, 'Resolved')}
+                                                            disabled={actionLoading === m.id}
+                                                            style={{ padding: '6px 10px', background: '#10b981', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '0.75rem' }}
+                                                        >
+                                                            Resolve
+                                                        </button>
+                                                    )}
+                                                    {(m.status || 'unread').toLowerCase() === 'unread' && (
+                                                        <button
+                                                            onClick={() => handleUpdateMessageStatus(m.id, 'Read')}
+                                                            disabled={actionLoading === m.id}
+                                                            style={{ padding: '6px 10px', background: '#3b82f6', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '0.75rem' }}
+                                                        >
+                                                            Mark Read
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                        {contactMessages.length === 0 && (
+                            <p style={{ textAlign: 'center', color: '#64748b', padding: '2rem' }}>No messages found.</p>
+                        )}
+                    </div>
+                )}
             </div>
 
             {/* Delete Confirmation Modal */}
@@ -857,7 +1095,13 @@ const AdminDashboard = ({ user, logout }) => {
                                 Cancel
                             </button>
                             <button
-                                onClick={() => handleDeleteJob(confirmModal.jobId)}
+                                onClick={() => {
+                                    if (confirmModal.type === 'intl') {
+                                        handleDeleteInternationalJob(confirmModal.jobId);
+                                    } else {
+                                        handleDeleteJob(confirmModal.jobId);
+                                    }
+                                }}
                                 style={{
                                     flex: 1, padding: '12px', background: '#dc2626', color: 'white',
                                     border: 'none', borderRadius: '10px', fontSize: '0.9rem',

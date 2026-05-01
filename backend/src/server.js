@@ -30,8 +30,6 @@ app.get('/api/test-db', async (req, res) => {
     }
 });
 
-const timeExchangeRoutes = require('./routes/timeExchangeRoutes');
-
 // Routes
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/jobs', require('./routes/jobRoutes'));
@@ -43,7 +41,7 @@ app.use('/api/complaints', require('./routes/complaintRoutes'));
 app.use('/api/chat', require('./routes/chatRoutes'));
 app.use('/api/contact', require('./routes/contactRoutes'));
 app.use('/api/international-jobs', require('./routes/internationalJobRoutes'));
-app.use('/api/time-exchange', timeExchangeRoutes);
+app.use('/api/time-exchange', require('./routes/timeExchangeRoutes'));
 app.use('/api/bookings', require('./routes/bookingRoutes'));
 
 // Error handling middleware
