@@ -16,6 +16,7 @@ const Home = () => {
     const [searchResults, setSearchResults] = useState([]);
     const [isSearching, setIsSearching] = useState(false);
     const [hasSearched, setHasSearched] = useState(false);
+    const [activeIndustry, setActiveIndustry] = useState(null);
     const searchResultsRef = useRef(null);
 
     const isUrdu = language === 'ur';
@@ -26,6 +27,7 @@ const Home = () => {
 
         setIsSearching(true);
         setHasSearched(true);
+        setActiveIndustry(null);
         try {
             const response = await axios.get('http://localhost:5000/api/jobs/public');
             if (response.data && Array.isArray(response.data)) {
@@ -58,6 +60,9 @@ const Home = () => {
         }
         setIsSearching(false);
 
+        // Push history so back button returns to landing page
+        window.history.pushState({ filtered: true }, '');
+
         // Auto-scroll down to the results
         setTimeout(() => {
             searchResultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -69,16 +74,66 @@ const Home = () => {
         setHasSearched(false);
         setSearchQuery('');
         setLocation('');
+        setActiveIndustry(null);
     };
 
     const categories = [
-        { id: 1, name: "Information Technology", icon: "💻", count: "1,200+ Jobs" },
-        { id: 2, name: "Sales & Marketing", icon: "📈", count: "850+ Jobs" },
-        { id: 3, name: "Banking & Finance", icon: "🏦", count: "400+ Jobs" },
-        { id: 4, name: "Healthcare", icon: "🏥", count: "600+ Jobs" },
-        { id: 5, name: "Engineering", icon: "⚙️", count: "550+ Jobs" },
-        { id: 6, name: "Blue-Collar Services", icon: "🛠️", count: "2,000+ Jobs" },
+        { id: 1, name: "Information Technology", nameUr: "انفارمیشن ٹیکنالوجی", icon: "💻", keywords: ['developer', 'software', 'engineer', 'tech', 'IT', 'programming', 'web', 'frontend', 'backend', 'fullstack', 'data', 'cloud', 'devops', 'cybersecurity', 'database', 'react', 'node', 'python', 'java', 'javascript', 'ui', 'ux', 'design', 'mobile', 'app', 'system', 'network', 'QA', 'testing'] },
+        { id: 2, name: "Sales & Marketing", nameUr: "سیلز اور مارکیٹنگ", icon: "📈", keywords: ['sales', 'marketing', 'seo', 'social media', 'content', 'digital', 'brand', 'advertising', 'market', 'copywriter', 'PR', 'public relations', 'campaign', 'growth', 'lead', 'business development', 'account manager'] },
+        { id: 3, name: "Banking & Finance", nameUr: "بینکنگ اور فنانس", icon: "🏦", keywords: ['banking', 'finance', 'accounting', 'accountant', 'financial', 'auditor', 'tax', 'investment', 'analyst', 'bank', 'treasury', 'loan', 'insurance', 'credit', 'payroll', 'bookkeeping'] },
+        { id: 4, name: "Healthcare", nameUr: "ہیلتھ کیئر", icon: "🏥", keywords: ['health', 'medical', 'doctor', 'nurse', 'hospital', 'pharma', 'pharmaceutical', 'clinical', 'patient', 'dental', 'surgeon', 'therapist', 'lab', 'healthcare', 'nutrition', 'wellness'] },
+        { id: 5, name: "Engineering", nameUr: "انجینئرنگ", icon: "⚙️", keywords: ['engineer', 'engineering', 'mechanical', 'civil', 'electrical', 'chemical', 'structural', 'construction', 'architecture', 'CAD', 'project manager', 'site', 'industrial', 'manufacturing', 'automation'] },
+        { id: 6, name: "Blue-Collar Services", nameUr: "بلیو کالر سروسز", icon: "🛠️", keywords: ['blue'], filterByType: true },
     ];
+
+    const getIndustryCounts = () => {
+        if (fetchedJobs.length === 0) return {};
+        const counts = {};
+        categories.forEach(cat => {
+            if (cat.filterByType) {
+                counts[cat.id] = fetchedJobs.filter(j => j.type === 'blue').length;
+            } else {
+                counts[cat.id] = fetchedJobs.filter(j => {
+                    const text = `${j.title || ''} ${j.description || ''} ${j.skills || ''}`.toLowerCase();
+                    return cat.keywords.some(kw => text.includes(kw.toLowerCase()));
+                }).length;
+            }
+        });
+        return counts;
+    };
+
+    const industryCounts = getIndustryCounts();
+
+    const handleIndustryClick = async (category) => {
+        setActiveIndustry(category.name);
+        setIsSearching(true);
+        setHasSearched(true);
+        setSearchQuery('');
+        setLocation('');
+        window.history.pushState({ filtered: true }, '');
+        try {
+            const response = await axios.get('http://localhost:5000/api/jobs/public');
+            if (response.data && Array.isArray(response.data)) {
+                let results;
+                if (category.filterByType) {
+                    results = response.data.filter(j => j.type === 'blue');
+                } else {
+                    results = response.data.filter(job => {
+                        const text = `${job.title || ''} ${job.description || ''} ${job.skills || ''}`.toLowerCase();
+                        return category.keywords.some(kw => text.includes(kw.toLowerCase()));
+                    });
+                }
+                setSearchResults(results);
+            }
+        } catch (error) {
+            console.error('Industry filter error:', error);
+            setSearchResults([]);
+        }
+        setIsSearching(false);
+        setTimeout(() => {
+            searchResultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 100);
+    };
 
     useEffect(() => {
         const fetchJobs = async () => {
@@ -93,6 +148,18 @@ const Home = () => {
             }
         };
         fetchJobs();
+
+        // Handle browser back button — clear filter instead of leaving the page
+        const handlePopState = () => {
+            setSearchResults([]);
+            setHasSearched(false);
+            setSearchQuery('');
+            setLocation('');
+            setActiveIndustry(null);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        };
+        window.addEventListener('popstate', handlePopState);
+        return () => window.removeEventListener('popstate', handlePopState);
     }, []);
 
     const getFilteredJobs = () => {
@@ -170,8 +237,8 @@ const Home = () => {
                         <h2 className="dark-text">
                             {isSearching ? (isUrdu ? 'تلاش ہو رہی ہے...' : 'Searching...') : (
                                 searchResults.length > 0
-                                    ? `${searchResults.length} ${isUrdu ? 'نوکریاں ملیں' : 'Jobs Found'}`
-                                    : (isUrdu ? 'کوئی نتائج نہیں ملے' : 'No Results Found')
+                                    ? `${searchResults.length} ${activeIndustry ? (isUrdu ? `نوکریاں - ${activeIndustry}` : `Jobs in ${activeIndustry}`) : (isUrdu ? 'نوکریاں ملیں' : 'Jobs Found')}`
+                                    : (activeIndustry ? (isUrdu ? `${activeIndustry} میں کوئی نوکری نہیں ملی` : `No jobs found in ${activeIndustry}`) : (isUrdu ? 'کوئی نتائج نہیں ملے' : 'No Results Found'))
                             )}
                         </h2>
                         <button className="clear-search-btn" onClick={clearSearch}>
@@ -229,10 +296,10 @@ const Home = () => {
                     </div>
                     <div className="categories-grid">
                         {categories.map(cat => (
-                            <div key={cat.id} className="category-card light-card" onClick={() => navigate('/login')}>
+                            <div key={cat.id} className={`category-card light-card ${activeIndustry === cat.name ? 'active-industry' : ''}`} onClick={() => handleIndustryClick(cat)}>
                                 <div className="category-icon">{cat.icon}</div>
-                                <h3 className="dark-text">{cat.name}</h3>
-                                <span className="category-count light-text">{cat.count}</span>
+                                <h3 className="dark-text">{isUrdu ? cat.nameUr : cat.name}</h3>
+                                <span className="category-count light-text">{industryCounts[cat.id] !== undefined ? `${industryCounts[cat.id]} ${isUrdu ? 'نوکریاں' : 'Jobs'}` : (isUrdu ? 'لوڈ ہو رہا ہے...' : 'Loading...')}</span>
                             </div>
                         ))}
                     </div>

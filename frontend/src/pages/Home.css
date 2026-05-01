@@ -357,6 +357,27 @@ section {
     box-shadow: 0 10px 25px rgba(30, 108, 217, 0.1);
 }
 
+.category-card.active-industry {
+    border-color: #1e6cd9;
+    background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+    transform: translateY(-5px);
+    box-shadow: 0 10px 30px rgba(30, 108, 217, 0.2);
+}
+
+.category-card.active-industry .category-icon {
+    transform: scale(1.1);
+    transition: transform 0.3s ease;
+}
+
+.category-card.active-industry h3 {
+    color: #1e6cd9 !important;
+}
+
+.category-card.active-industry .category-count {
+    color: #1e6cd9 !important;
+    font-weight: 700;
+}
+
 .category-icon {
     font-size: 3rem;
     margin-bottom: 1rem;
