@@ -342,6 +342,66 @@ const WhiteCollarDashboard = ({ user, logout }) => {
     const [profileName, setProfileName] = useState('');
     const [profileAvatar, setProfileAvatar] = useState('');
 
+    // --- State: Scholarships ---
+    const [scholarships, setScholarships] = useState([]);
+    const [myScholarshipApps, setMyScholarshipApps] = useState([]);
+    const [loadingScholarships, setLoadingScholarships] = useState(false);
+
+    useEffect(() => {
+        const fetchScholarships = async () => {
+            setLoadingScholarships(true);
+            try {
+                const res = await fetch('http://localhost:5000/api/scholarships');
+                const result = await res.json();
+                if (Array.isArray(result)) setScholarships(result);
+
+                if (user?.id) {
+                    const token = sessionStorage.getItem('token');
+                    if (token) {
+                        const appRes = await fetch('http://localhost:5000/api/scholarships/my-applications', {
+                            headers: { 'Authorization': `Bearer ${token}` }
+                        });
+                        const appResult = await appRes.json();
+                        if (Array.isArray(appResult)) {
+                            setMyScholarshipApps(appResult.map(a => a.scholarship_id));
+                        }
+                    }
+                }
+            } catch (error) {
+                console.error('Error fetching scholarships:', error);
+            } finally {
+                setLoadingScholarships(false);
+            }
+        };
+        fetchScholarships();
+    }, [user?.id]);
+
+    const handleApplyScholarship = async (scholarship) => {
+        if (scholarship.application_link) {
+            window.open(scholarship.application_link, '_blank');
+            return;
+        }
+
+        const token = sessionStorage.getItem('token');
+        if (!token) return toast.error('Please login to apply');
+
+        try {
+            const res = await fetch(`http://localhost:5000/api/scholarships/${scholarship.id}/apply`, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }
+            });
+            const result = await res.json();
+            if (res.ok) {
+                toast.success('Applied successfully for the scholarship!');
+                setMyScholarshipApps(prev => [...prev, scholarship.id]);
+            } else {
+                toast.error(result.error || 'Failed to apply');
+            }
+        } catch (error) {
+            toast.error('Network error. Please try again.');
+        }
+    };
+
     // --- State: Find Jobs ---
     const [jobs, setJobs] = useState([]);
     const [filteredJobs, setFilteredJobs] = useState([]);
@@ -761,12 +821,65 @@ const [travelAnnouncements, setTravelAnnouncements] = useState([]);
                                 <h3>{t('te_header')}</h3>
                                 <p>{t('te_subtitle')}</p>
                             </div>
-                            <div className="wc-dash-card disabled" onClick={() => toast('Scholarships portal coming soon!')}>
+                            <div className="wc-dash-card" onClick={() => handleTabChange('scholarships')}>
                                 <div className="wc-dash-card-icon">🎓</div>
                                 <h3>Scholarships</h3>
-                                <p>Coming soon: Explore educational opportunities</p>
+                                <p>Explore and apply for educational opportunities</p>
                             </div>
                         </div>
+                    </section>
+                )}
+
+                {/* -------------------- SCHOLARSHIPS TAB -------------------- */}
+                {activeTab === 'scholarships' && (
+                    <section style={{ padding: '0 2rem' }}>
+                        <div style={{ background: 'linear-gradient(135deg, #1e293b 0%, #0f172a 100%)', padding: '3rem 2rem', borderRadius: '24px', marginBottom: '2rem', textAlign: 'center', border: '1px solid #334155' }}>
+                            <h1 style={{ fontSize: '2rem', color: '#f8fafc', margin: '0 0 0.5rem' }}>🎓 Educational Scholarships</h1>
+                            <p style={{ color: '#94a3b8', margin: 0 }}>Explore opportunities provided by various institutions</p>
+                        </div>
+
+                        {loadingScholarships ? (
+                            <div style={{ textAlign: 'center', padding: '3rem', color: '#94a3b8' }}>Loading scholarships...</div>
+                        ) : scholarships.length === 0 ? (
+                            <div style={{ textAlign: 'center', padding: '3rem', background: '#f8fafc', borderRadius: '16px', border: '1px dashed #e2e8f0', color: '#64748b' }}>
+                                <h3>No active scholarships found</h3>
+                                <p>Please check back later for new opportunities.</p>
+                            </div>
+                        ) : (
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '24px' }}>
+                                {scholarships.map(s => {
+                                    const hasApplied = myScholarshipApps.includes(s.id);
+                                    return (
+                                        <div key={s.id} style={{ background: '#ffffff', borderRadius: '16px', padding: '24px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)', border: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column' }}>
+                                            <div style={{ flex: 1 }}>
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px' }}>
+                                                    <h3 style={{ margin: 0, color: '#1e293b', fontSize: '1.25rem', fontWeight: 700 }}>{s.title}</h3>
+                                                    <span style={{ background: '#eef2ff', color: '#4f46e5', padding: '4px 10px', borderRadius: '20px', fontSize: '0.75rem', fontWeight: 700 }}>{s.provider}</span>
+                                                </div>
+                                                <p style={{ color: '#475569', fontSize: '0.95rem', lineHeight: 1.6, marginBottom: '20px' }}>{s.description}</p>
+                                                {s.deadline && (
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#dc2626', fontSize: '0.85rem', fontWeight: 600, marginBottom: '20px' }}>
+                                                        <span>⏳</span> Deadline: {new Date(s.deadline).toLocaleDateString()}
+                                                    </div>
+                                                )}
+                                            </div>
+                                            <button 
+                                                onClick={() => handleApplyScholarship(s)}
+                                                disabled={hasApplied && !s.application_link}
+                                                style={{ 
+                                                    width: '100%', padding: '12px', borderRadius: '12px', fontWeight: 700, border: 'none', cursor: (hasApplied && !s.application_link) ? 'not-allowed' : 'pointer',
+                                                    background: (hasApplied && !s.application_link) ? '#e2e8f0' : (s.application_link ? '#3b82f6' : '#10b981'),
+                                                    color: (hasApplied && !s.application_link) ? '#94a3b8' : '#fff',
+                                                    transition: 'all 0.2s'
+                                                }}
+                                            >
+                                                {s.application_link ? 'Apply on Website ↗' : (hasApplied ? 'Applied ✓' : 'Apply Now')}
+                                            </button>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        )}
                     </section>
                 )}
 

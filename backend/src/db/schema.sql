@@ -62,3 +62,28 @@ CREATE INDEX IF NOT EXISTS idx_jobs_type ON jobs(type);
 CREATE INDEX IF NOT EXISTS idx_jobs_employer ON jobs(employer_id);
 CREATE INDEX IF NOT EXISTS idx_applications_job ON applications(job_id);
 CREATE INDEX IF NOT EXISTS idx_profiles_user ON profiles(user_id);
+
+-- Scholarships Table
+CREATE TABLE IF NOT EXISTS scholarships (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    title TEXT NOT NULL,
+    provider TEXT NOT NULL,
+    description TEXT,
+    deadline DATE,
+    application_link TEXT, -- If null, it means internal application
+    is_active BOOLEAN DEFAULT true,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Scholarship Applications Table (for internal applications)
+CREATE TABLE IF NOT EXISTS scholarship_applications (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    scholarship_id UUID REFERENCES scholarships(id) ON DELETE CASCADE,
+    applicant_id UUID REFERENCES users(id) ON DELETE CASCADE,
+    status TEXT DEFAULT 'Pending' CHECK (status IN ('Pending', 'Reviewed', 'Accepted', 'Rejected')),
+    applied_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    UNIQUE(scholarship_id, applicant_id) -- Prevent multiple applications to the same scholarship
+);
+
+CREATE INDEX IF NOT EXISTS idx_scholarship_applications_scholarship ON scholarship_applications(scholarship_id);
+CREATE INDEX IF NOT EXISTS idx_scholarship_applications_applicant ON scholarship_applications(applicant_id);

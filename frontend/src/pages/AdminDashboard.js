@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import toast from 'react-hot-toast';
 import '../index.css';
 
 const AdminDashboard = ({ user, logout }) => {
@@ -11,6 +12,7 @@ const AdminDashboard = ({ user, logout }) => {
     const [verifications, setVerifications] = useState([]);
     const [contactMessages, setContactMessages] = useState([]);
     const [internationalJobs, setInternationalJobs] = useState([]);
+    const [scholarships, setScholarships] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [actionLoading, setActionLoading] = useState(null);
@@ -104,6 +106,16 @@ const AdminDashboard = ({ user, logout }) => {
         }
     };
 
+    const fetchScholarships = async () => {
+        try {
+            const res = await fetch(`${API_URL}/scholarships/admin`, { headers: getHeaders() });
+            const result = await res.json();
+            if (Array.isArray(result)) setScholarships(result);
+        } catch (err) {
+            console.error('Error fetching scholarships:', err);
+        }
+    };
+
     // ---- COMPLAINT ACTION ----
     const handleUpdateComplaintStatus = async (id, status) => {
         const notes = prompt(`Enter admin notes for marking as ${status} (Optional):`);
@@ -129,7 +141,7 @@ const AdminDashboard = ({ user, logout }) => {
     useEffect(() => {
         const loadAll = async () => {
             setLoading(true);
-            await Promise.all([fetchStats(), fetchUsers(), fetchJobs(), fetchLogs(), fetchComplaints(), fetchVerifications(), fetchContactMessages(), fetchInternationalJobs()]);
+            await Promise.all([fetchStats(), fetchUsers(), fetchJobs(), fetchLogs(), fetchComplaints(), fetchVerifications(), fetchContactMessages(), fetchInternationalJobs(), fetchScholarships()]);
             setLoading(false);
         };
         loadAll();
@@ -239,6 +251,53 @@ const AdminDashboard = ({ user, logout }) => {
         }
     };
 
+    const handleDeleteScholarship = async (id) => {
+        setConfirmModal({ show: false, jobId: null, jobTitle: '', type: '' });
+        setActionLoading(id);
+        try {
+            const res = await fetch(`${API_URL}/scholarships/${id}`, {
+                method: 'DELETE',
+                headers: getHeaders()
+            });
+            const result = await res.json();
+            if (result.message) {
+                setScholarships(prev => prev.filter(s => s.id !== id));
+                toast.success('Scholarship deleted successfully');
+            } else {
+                toast.error(result.error || 'Failed to delete scholarship');
+            }
+        } catch (err) {
+            console.error('Error deleting scholarship:', err);
+            toast.error('Internal server error');
+        } finally {
+            setActionLoading(null);
+        }
+    };
+
+    // ---- SCHOLARSHIP FORM ----
+    const [scholarshipForm, setScholarshipForm] = useState({ title: '', provider: '', description: '', deadline: '', application_link: '' });
+    const handleCreateScholarship = async (e) => {
+        e.preventDefault();
+        try {
+            const res = await fetch(`${API_URL}/scholarships`, {
+                method: 'POST',
+                headers: getHeaders(),
+                body: JSON.stringify(scholarshipForm)
+            });
+            const result = await res.json();
+            if (result.message) {
+                toast.success('Scholarship posted successfully!');
+                setScholarshipForm({ title: '', provider: '', description: '', deadline: '', application_link: '' });
+                fetchScholarships();
+            } else {
+                toast.error(result.error || 'Failed to post scholarship');
+            }
+        } catch (err) {
+            console.error('Error posting scholarship:', err);
+            toast.error('Internal server error');
+        }
+    };
+
     // ---- HELPER ----
     const getRoleBadgeColor = (role) => {
         switch (role) {
@@ -310,6 +369,7 @@ const AdminDashboard = ({ user, logout }) => {
                     { key: 'users', label: '👥 Users', icon: '' },
                     { key: 'jobs', label: '💼 Local Jobs', icon: '' },
                     { key: 'intl_jobs', label: '🌍 Intl Jobs', icon: '' },
+                    { key: 'scholarships', label: '🎓 Scholarships', icon: '' },
                     { key: 'complaints', label: '⚠️ Complaints', icon: '' },
                     { key: 'verifications', label: '🛡️ Verifications', icon: '' },
                     { key: 'inbox', label: '📥 Inbox', icon: '' },
@@ -850,6 +910,98 @@ const AdminDashboard = ({ user, logout }) => {
                         )}
                     </div>
                 )}
+                {/* ======== SCHOLARSHIPS TAB ======== */}
+                {activeTab === 'scholarships' && (
+                    <div>
+                        <div style={{ display: 'flex', gap: '24px', flexWrap: 'wrap' }}>
+                            {/* Post Form */}
+                            <div style={{ flex: '1 1 350px', background: '#1e293b', padding: '24px', borderRadius: '12px', border: '1px solid #334155' }}>
+                                <h3 style={{ margin: '0 0 20px', color: '#f8fafc' }}>Post a New Scholarship</h3>
+                                <form onSubmit={handleCreateScholarship} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                                    <input 
+                                        type="text" 
+                                        placeholder="Scholarship Title *" 
+                                        required 
+                                        value={scholarshipForm.title} 
+                                        onChange={e => setScholarshipForm({...scholarshipForm, title: e.target.value})}
+                                        style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #334155', background: '#0f172a', color: '#e2e8f0' }}
+                                    />
+                                    <input 
+                                        type="text" 
+                                        placeholder="Provider (e.g., HEC, NUST) *" 
+                                        required 
+                                        value={scholarshipForm.provider} 
+                                        onChange={e => setScholarshipForm({...scholarshipForm, provider: e.target.value})}
+                                        style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #334155', background: '#0f172a', color: '#e2e8f0' }}
+                                    />
+                                    <textarea 
+                                        placeholder="Description & Eligibility..." 
+                                        rows="4" 
+                                        value={scholarshipForm.description} 
+                                        onChange={e => setScholarshipForm({...scholarshipForm, description: e.target.value})}
+                                        style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #334155', background: '#0f172a', color: '#e2e8f0', resize: 'vertical' }}
+                                    />
+                                    <input 
+                                        type="date" 
+                                        title="Deadline" 
+                                        value={scholarshipForm.deadline} 
+                                        onChange={e => setScholarshipForm({...scholarshipForm, deadline: e.target.value})}
+                                        style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #334155', background: '#0f172a', color: '#e2e8f0' }}
+                                    />
+                                    <input 
+                                        type="url" 
+                                        placeholder="External Application Link (Optional)" 
+                                        value={scholarshipForm.application_link} 
+                                        onChange={e => setScholarshipForm({...scholarshipForm, application_link: e.target.value})}
+                                        style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #334155', background: '#0f172a', color: '#e2e8f0' }}
+                                    />
+                                    <p style={{ margin: 0, fontSize: '0.8rem', color: '#94a3b8' }}>* Leave link blank to accept internal applications.</p>
+                                    <button 
+                                        type="submit" 
+                                        style={{ padding: '12px', background: '#3b82f6', color: '#fff', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' }}
+                                    >
+                                        Post Scholarship
+                                    </button>
+                                </form>
+                            </div>
+
+                            {/* List */}
+                            <div style={{ flex: '2 1 500px' }}>
+                                <h3 style={{ margin: '0 0 20px', color: '#f8fafc' }}>Active Scholarships ({scholarships.length})</h3>
+                                {scholarships.length === 0 ? (
+                                    <p style={{ color: '#94a3b8' }}>No scholarships posted yet.</p>
+                                ) : (
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                                        {scholarships.map(s => (
+                                            <div key={s.id} style={{ background: '#1e293b', padding: '20px', borderRadius: '12px', border: '1px solid #334155', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                                                <div>
+                                                    <h4 style={{ margin: '0 0 8px', color: '#f8fafc', fontSize: '1.2rem' }}>{s.title}</h4>
+                                                    <p style={{ margin: '0 0 12px', color: '#3b82f6', fontWeight: '600' }}>{s.provider}</p>
+                                                    <p style={{ margin: '0 0 12px', color: '#94a3b8', fontSize: '0.9rem', maxWidth: '600px' }}>{s.description}</p>
+                                                    <div style={{ display: 'flex', gap: '16px', fontSize: '0.85rem', color: '#cbd5e1' }}>
+                                                        {s.deadline && <span>📅 Deadline: {new Date(s.deadline).toLocaleDateString()}</span>}
+                                                        {s.application_link ? (
+                                                            <span style={{ color: '#10b981' }}>🔗 External Link Provided</span>
+                                                        ) : (
+                                                            <span style={{ color: '#f59e0b' }}>📥 Internal Applications</span>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                                <button 
+                                                    onClick={() => setConfirmModal({ show: true, jobId: s.id, jobTitle: s.title, type: 'scholarship' })}
+                                                    disabled={actionLoading === s.id}
+                                                    style={{ padding: '8px 12px', background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.2)', borderRadius: '6px', cursor: 'pointer' }}
+                                                >
+                                                    {actionLoading === s.id ? 'Deleting...' : 'Delete'}
+                                                </button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                )}
 
                 {/* ======== INTERNATIONAL JOBS TAB ======== */}
                 {activeTab === 'intl_jobs' && (
@@ -1063,7 +1215,7 @@ const AdminDashboard = ({ user, logout }) => {
 
                         {/* Title & Description */}
                         <h3 style={{ margin: '0 0 8px', textAlign: 'center', color: '#f8fafc', fontSize: '1.25rem', fontWeight: '700' }}>
-                            Delete Job Posting?
+                            {confirmModal.type === 'scholarship' ? 'Delete Scholarship?' : 'Delete Job Posting?'}
                         </h3>
                         <p style={{ margin: '0 0 8px', textAlign: 'center', color: '#94a3b8', fontSize: '0.9rem', lineHeight: '1.5' }}>
                             You are about to permanently delete:
@@ -1098,6 +1250,8 @@ const AdminDashboard = ({ user, logout }) => {
                                 onClick={() => {
                                     if (confirmModal.type === 'intl') {
                                         handleDeleteInternationalJob(confirmModal.jobId);
+                                    } else if (confirmModal.type === 'scholarship') {
+                                        handleDeleteScholarship(confirmModal.jobId);
                                     } else {
                                         handleDeleteJob(confirmModal.jobId);
                                     }
