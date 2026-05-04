@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import ChatBox from './ChatBox';
 import '../index.css';
+import { BASE_URL } from '../utils/api';
 
 const ChatWidget = ({ currentUser }) => {
     const [isOpen, setIsOpen] = useState(false);
@@ -14,7 +15,7 @@ const ChatWidget = ({ currentUser }) => {
         const fetchMyProfileId = async () => {
             try {
                 const token = sessionStorage.getItem('token');
-                const res = await fetch('http://localhost:5000/api/profile', {
+                const res = await fetch(`${BASE_URL}/api/profile`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
                 if (res.ok) {
@@ -36,7 +37,7 @@ const ChatWidget = ({ currentUser }) => {
         if (!isPolling) setLoading(true);
         try {
             const token = sessionStorage.getItem('token');
-            const res = await fetch('http://localhost:5000/api/chat/sessions', {
+            const res = await fetch(`${BASE_URL}/api/chat/sessions`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             if (res.ok) {

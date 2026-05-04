@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import toast from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
 import '../index.css';
+import { BASE_URL } from '../utils/api';
 
 const NotificationBell = ({ language = 'en' }) => {
     const [notifications, setNotifications] = useState([]);
@@ -40,7 +41,7 @@ const NotificationBell = ({ language = 'en' }) => {
             const token = sessionStorage.getItem('token');
             if (!token) return;
 
-            const response = await fetch('http://localhost:5000/api/notifications', {
+            const response = await fetch(`${BASE_URL}/api/notifications`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
 
@@ -73,7 +74,7 @@ const NotificationBell = ({ language = 'en' }) => {
     const handleMarkAsRead = async (id) => {
         try {
             const token = sessionStorage.getItem('token');
-            const response = await fetch(`http://localhost:5000/api/notifications/${id}/read`, {
+            const response = await fetch(`${BASE_URL}/api/notifications/${id}/read`, {
                 method: 'PUT',
                 headers: { 'Authorization': `Bearer ${token}` }
             });
@@ -91,7 +92,7 @@ const NotificationBell = ({ language = 'en' }) => {
     const handleMarkAllAsRead = async () => {
         try {
             const token = sessionStorage.getItem('token');
-            const response = await fetch('http://localhost:5000/api/notifications/read-all', {
+            const response = await fetch(`${BASE_URL}/api/notifications/read-all`, {
                 method: 'PUT',
                 headers: { 'Authorization': `Bearer ${token}` }
             });
@@ -108,7 +109,7 @@ const NotificationBell = ({ language = 'en' }) => {
     const handleViewProfile = async (notification) => {
         try {
             const token = sessionStorage.getItem('token');
-            const response = await fetch(`http://localhost:5000/api/notifications/application-context/${notification.related_id}`, {
+            const response = await fetch(`${BASE_URL}/api/notifications/application-context/${notification.related_id}`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
 
@@ -128,7 +129,7 @@ const NotificationBell = ({ language = 'en' }) => {
         setActionLoading(notification.id + status);
         try {
             const token = sessionStorage.getItem('token');
-            const response = await fetch(`http://localhost:5000/api/jobs/applications/${notification.related_id}/status`, {
+            const response = await fetch(`${BASE_URL}/api/jobs/applications/${notification.related_id}/status`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',

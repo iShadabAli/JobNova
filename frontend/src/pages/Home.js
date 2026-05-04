@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '../context/LanguageContext';
 import LanguageToggle from '../components/LanguageToggle';
 import './Home.css';
+import { BASE_URL } from '../utils/api';
 
 const Home = () => {
     const { t, language } = useLanguage();
@@ -29,7 +30,7 @@ const Home = () => {
         setHasSearched(true);
         setActiveIndustry(null);
         try {
-            const response = await axios.get('http://localhost:5000/api/jobs/public');
+            const response = await axios.get(`${BASE_URL}/api/jobs/public`);
             if (response.data && Array.isArray(response.data)) {
                 let results = response.data;
 
@@ -112,7 +113,7 @@ const Home = () => {
         setLocation('');
         window.history.pushState({ filtered: true }, '');
         try {
-            const response = await axios.get('http://localhost:5000/api/jobs/public');
+            const response = await axios.get(`${BASE_URL}/api/jobs/public`);
             if (response.data && Array.isArray(response.data)) {
                 let results;
                 if (category.filterByType) {
@@ -139,7 +140,7 @@ const Home = () => {
         const fetchJobs = async () => {
             try {
                 // Fetch public jobs directly from the new backend route
-                const response = await axios.get('http://localhost:5000/api/jobs/public');
+                const response = await axios.get(`${BASE_URL}/api/jobs/public`);
                 if (response.data && Array.isArray(response.data)) {
                     setFetchedJobs(response.data);
                 }

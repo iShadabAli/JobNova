@@ -54,16 +54,20 @@ app.use((err, req, res, next) => {
     });
 });
 
-// Start server
-const startServer = async () => {
-    // Test database connection on startup
-    console.log('🔄 Testing Supabase connection...');
-    await testConnection();
+// Start server (only when running locally, not on Vercel)
+if (process.env.VERCEL !== '1') {
+    const startServer = async () => {
+        console.log('🔄 Testing Supabase connection...');
+        await testConnection();
 
-    app.listen(PORT, () => {
-        console.log(`🚀 JobNova Server running on port ${PORT}`);
-        console.log(`📡 API available at http://localhost:${PORT}/api`);
-    });
-};
+        app.listen(PORT, () => {
+            console.log(`🚀 JobNova Server running on port ${PORT}`);
+            console.log(`📡 API available at http://localhost:${PORT}/api`);
+        });
+    };
 
-startServer();
+    startServer();
+}
+
+// Export for Vercel serverless functions
+module.exports = app;

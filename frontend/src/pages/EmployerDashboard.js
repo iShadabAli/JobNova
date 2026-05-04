@@ -7,6 +7,7 @@ import JobMap from '../components/JobMap';
 import NotificationBell from '../components/NotificationBell';
 import ComplaintModal from '../components/ComplaintModal';
 import ChatWidget from '../components/ChatWidget';
+import { BASE_URL } from '../utils/api';
 
 const EmployerDashboard = ({ user, logout }) => {
     const [hireModal, setHireModal] = useState({ show: false, workerId: null, teId: null, workerName: '', message: "I'm interested in hiring you for your travel period." });
@@ -14,7 +15,7 @@ const EmployerDashboard = ({ user, logout }) => {
     const handleHireWorker = async () => {
         try {
             const token = sessionStorage.getItem('token');
-            const response = await fetch('http://localhost:5000/api/time-exchange/hire', {
+            const response = await fetch(`${BASE_URL}/api/time-exchange/hire`, {
                 method: 'POST',
                 headers: { 
                     'Content-Type': 'application/json',
@@ -51,8 +52,8 @@ const EmployerDashboard = ({ user, logout }) => {
         setLoadingTE(true);
         try {
             const url = teSearchCity 
-                ? 'http://localhost:5000/api/time-exchange?to_city=' + teSearchCity
-                : 'http://localhost:5000/api/time-exchange';
+                ? `${BASE_URL}/api/time-exchange?to_city=` + teSearchCity
+                : `${BASE_URL}/api/time-exchange`;
             const res = await fetch(url);
             const result = await res.json();
             if (result.success) {
@@ -115,7 +116,7 @@ const EmployerDashboard = ({ user, logout }) => {
         try {
             const token = sessionStorage.getItem('token');
             const q = searchVal !== undefined ? searchVal : bookSearch;
-            const url = q.trim() ? `http://localhost:5000/api/bookings/workers?search=${encodeURIComponent(q)}` : 'http://localhost:5000/api/bookings/workers';
+            const url = q.trim() ? `${BASE_URL}/api/bookings/workers?search=${encodeURIComponent(q)}` : `${BASE_URL}/api/bookings/workers`;
             const res = await fetch(url, { headers: { 'Authorization': `Bearer ${token}` } });
             const result = await res.json();
             if (result.success) setBookWorkers(result.data);
@@ -127,7 +128,7 @@ const EmployerDashboard = ({ user, logout }) => {
         setLoadingMyBookings(true);
         try {
             const token = sessionStorage.getItem('token');
-            const res = await fetch('http://localhost:5000/api/bookings/employer', { headers: { 'Authorization': `Bearer ${token}` } });
+            const res = await fetch(`${BASE_URL}/api/bookings/employer`, { headers: { 'Authorization': `Bearer ${token}` } });
             const result = await res.json();
             if (result.success) setMyBookings(result.data);
         } catch (err) { console.error('Error fetching bookings:', err); }
@@ -158,7 +159,7 @@ const EmployerDashboard = ({ user, logout }) => {
         setSubmittingBooking(true);
         try {
             const token = sessionStorage.getItem('token');
-            const res = await fetch('http://localhost:5000/api/bookings', {
+            const res = await fetch(`${BASE_URL}/api/bookings`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                 body: JSON.stringify({ ...bookingForm, worker_id: bookingModal.worker?.id })
@@ -185,7 +186,7 @@ const EmployerDashboard = ({ user, logout }) => {
     const handleBookingStatus = async (bookingId, status) => {
         try {
             const token = sessionStorage.getItem('token');
-            const res = await fetch(`http://localhost:5000/api/bookings/${bookingId}/status`, {
+            const res = await fetch(`${BASE_URL}/api/bookings/${bookingId}/status`, {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                 body: JSON.stringify({ status })
@@ -226,7 +227,7 @@ const EmployerDashboard = ({ user, logout }) => {
                         onClick={async () => {
                             toast.dismiss(t.id);
                             try {
-                                const response = await fetch(`http://localhost:5000/api/international-jobs/${jobId}`, { method: 'DELETE' });
+                                const response = await fetch(`${BASE_URL}/api/international-jobs/${jobId}`, { method: 'DELETE' });
                                 const result = await response.json();
                                 if (result.success) {
                                     setMyIntlJobs(myIntlJobs.filter(j => j.id !== jobId));
@@ -249,7 +250,7 @@ const EmployerDashboard = ({ user, logout }) => {
     const fetchMyIntlJobs = async () => {
         setLoadingMyIntlJobs(true);
         try {
-            const response = await fetch(`http://localhost:5000/api/international-jobs/employer/${user.id}`);
+            const response = await fetch(`${BASE_URL}/api/international-jobs/employer/${user.id}`);
             const result = await response.json();
             if (result.success) setMyIntlJobs(result.data);
         } catch (error) {
@@ -269,7 +270,7 @@ const EmployerDashboard = ({ user, logout }) => {
         setSelectedIntlJob(job);
         setLoadingIntlApps(true);
         try {
-            const response = await fetch(`http://localhost:5000/api/international-jobs/${job.id}/applications`);
+            const response = await fetch(`${BASE_URL}/api/international-jobs/${job.id}/applications`);
             const result = await response.json();
             if (result.success) setIntlApplicants(result.data);
         } catch (error) {
@@ -282,7 +283,7 @@ const EmployerDashboard = ({ user, logout }) => {
     // Update status of an international job application
     const handleIntlStatusUpdate = async (appId, newStatus) => {
         try {
-            const response = await fetch(`http://localhost:5000/api/international-jobs/applications/${appId}/status`, {
+            const response = await fetch(`${BASE_URL}/api/international-jobs/applications/${appId}/status`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ status: newStatus })
@@ -304,7 +305,7 @@ const EmployerDashboard = ({ user, logout }) => {
         e.preventDefault();
         setSubmittingIntl(true);
         try {
-            const response = await fetch('http://localhost:5000/api/international-jobs', {
+            const response = await fetch(`${BASE_URL}/api/international-jobs`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ ...intlJob, employer_id: user.id })
@@ -333,7 +334,7 @@ const EmployerDashboard = ({ user, logout }) => {
         const fetchJobs = async () => {
             try {
                 const token = sessionStorage.getItem('token');
-                const response = await fetch('http://localhost:5000/api/jobs/my-jobs', {
+                const response = await fetch(`${BASE_URL}/api/jobs/my-jobs`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
                 if (response.ok) {
@@ -348,7 +349,7 @@ const EmployerDashboard = ({ user, logout }) => {
         const fetchProfile = async () => {
             try {
                 const token = sessionStorage.getItem('token');
-                const res = await fetch('http://localhost:5000/api/profile', {
+                const res = await fetch(`${BASE_URL}/api/profile`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
                 if (res.ok) {
@@ -387,7 +388,7 @@ const EmployerDashboard = ({ user, logout }) => {
                 longitude: hiringMode === 'blue' ? newJob.longitude : null
             };
 
-            const response = await fetch('http://localhost:5000/api/jobs', {
+            const response = await fetch(`${BASE_URL}/api/jobs`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -418,7 +419,7 @@ const EmployerDashboard = ({ user, logout }) => {
     const executeDeleteJob = async (jobId) => {
         try {
             const token = sessionStorage.getItem('token');
-            const response = await fetch(`http://localhost:5000/api/jobs/${jobId}`, {
+            const response = await fetch(`${BASE_URL}/api/jobs/${jobId}`, {
                 method: 'DELETE',
                 headers: { 'Authorization': `Bearer ${token}` }
             });
@@ -472,7 +473,7 @@ const EmployerDashboard = ({ user, logout }) => {
         setChatError(null);
         try {
             const token = sessionStorage.getItem('token');
-            const res = await fetch('http://localhost:5000/api/chat/start', {
+            const res = await fetch(`${BASE_URL}/api/chat/start`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                 body: JSON.stringify({ job_id: jobId, candidate_id: candidateId })
@@ -495,7 +496,7 @@ const EmployerDashboard = ({ user, logout }) => {
         setLoadingApps(true);
         try {
             const token = sessionStorage.getItem('token');
-            const response = await fetch(`http://localhost:5000/api/jobs/${job.id}/applications`, {
+            const response = await fetch(`${BASE_URL}/api/jobs/${job.id}/applications`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             if (response.ok) {
@@ -512,7 +513,7 @@ const EmployerDashboard = ({ user, logout }) => {
     const handleStatusUpdate = async (appId, newStatus) => {
         try {
             const token = sessionStorage.getItem('token');
-            const response = await fetch(`http://localhost:5000/api/jobs/applications/${appId}/status`, {
+            const response = await fetch(`${BASE_URL}/api/jobs/applications/${appId}/status`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
@@ -545,7 +546,7 @@ const EmployerDashboard = ({ user, logout }) => {
     const handleSubmitReview = async () => {
         try {
             const token = sessionStorage.getItem('token');
-            const response = await fetch('http://localhost:5000/api/reviews', {
+            const response = await fetch(`${BASE_URL}/api/reviews`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -705,9 +706,15 @@ const EmployerDashboard = ({ user, logout }) => {
                 {/* -------------------- TIME EXCHANGE EXPLORER VIEW -------------------- */}
                 {activeView === 'time-exchange' && (
                     <section style={{ padding: '0' }}>
-                        <div style={{ background: 'linear-gradient(135deg, #0f172a 0%, #334155 100%)', padding: '3rem 2rem', borderRadius: '24px', marginBottom: '2rem', textAlign: 'center' }}>
-                            <h1 style={{ fontSize: '2.2rem', color: '#fff', fontWeight: 800 }}>✈️ Time Exchange Explorer</h1>
-                            <p style={{ color: '#94a3b8' }}>Discover skilled workers traveling to your city for short-term tasks</p>
+                        {/* Premium Hero Banner */}
+                        <div style={{ background: 'linear-gradient(135deg, #0f172a 0%, #312e81 50%, #0f172a 100%)', padding: '3.5rem 2rem', borderRadius: '24px', marginBottom: '2.5rem', textAlign: 'center', position: 'relative', overflow: 'hidden', border: '1px solid rgba(99, 102, 241, 0.2)', boxShadow: '0 20px 40px rgba(0, 0, 0, 0.3)' }}>
+                            <div style={{ position: 'absolute', top: '-50%', left: '-10%', width: '300px', height: '300px', background: 'radial-gradient(circle, rgba(99,102,241,0.3) 0%, transparent 70%)', filter: 'blur(40px)' }}></div>
+                            <h1 style={{ fontSize: '2.5rem', margin: '0 0 1rem 0', color: '#ffffff', fontWeight: 800, position: 'relative', zIndex: 1, textShadow: '0 2px 10px rgba(0,0,0,0.5)' }}>
+                                Time Exchange Explorer
+                            </h1>
+                            <p style={{ color: '#ffffff', margin: '0', fontSize: '1.1rem', position: 'relative', zIndex: 1 }}>
+                                Discover skilled workers traveling to your city for short-term tasks
+                            </p>
                         </div>
 
                         <div className="te-explorer-content" style={{ maxWidth: '1000px', margin: '0 auto' }}>
@@ -779,7 +786,7 @@ const EmployerDashboard = ({ user, logout }) => {
                                                 <div style={{ display: 'flex', gap: '8px' }}>
                                                     <button onClick={() => {
                                                         const token = sessionStorage.getItem('token');
-                                                        fetch('http://localhost:5000/api/chat/start', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify({ job_id: null, candidate_id: trav.user_id }) })
+                                                        fetch(`${BASE_URL}/api/chat/start`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify({ job_id: null, candidate_id: trav.user_id }) })
                                                         .then(r => r.json()).then(data => { if (data.session) { window.dispatchEvent(new CustomEvent('open-chat', { detail: { session: data.session } })); } })
                                                     }} className="btn" style={{ flex: 1, borderRadius: '10px', padding: '10px', background: '#3b82f6', color: '#fff', border: 'none', fontWeight: 600 }}>
                                                         💬 Message
@@ -800,87 +807,86 @@ const EmployerDashboard = ({ user, logout }) => {
                 {/* -------------------- POST INTERNATIONAL JOB VIEW -------------------- */}
                 {activeView === 'post-international' && (
                     <section style={{ padding: '0' }}>
-                        {/* Hero Banner */}
-                        <div style={{ background: 'linear-gradient(135deg, #0f172a 0%, #1e3a8a 50%, #0f172a 100%)', padding: '3rem 2rem', borderRadius: '24px', marginBottom: '2rem', textAlign: 'center', position: 'relative', overflow: 'hidden', border: '1px solid rgba(59,130,246,0.15)' }}>
-                            <div style={{ position: 'absolute', top: '-50%', left: '-20%', width: '300px', height: '300px', background: 'radial-gradient(circle, rgba(59,130,246,0.15), transparent 70%)', pointerEvents: 'none' }} />
-                            <div style={{ position: 'absolute', bottom: '-40%', right: '-10%', width: '250px', height: '250px', background: 'radial-gradient(circle, rgba(16,185,129,0.15), transparent 70%)', pointerEvents: 'none' }} />
-                            <h1 style={{ fontSize: '2.2rem', margin: '0 0 0.5rem 0', background: 'linear-gradient(135deg, #60a5fa, #34d399)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', fontWeight: 800, position: 'relative' }}>
-                                🌍 Post International Job
+                        {/* Premium Hero Banner */}
+                        <div style={{ background: 'linear-gradient(135deg, #0f172a 0%, #312e81 50%, #0f172a 100%)', padding: '3.5rem 2rem', borderRadius: '24px', marginBottom: '2.5rem', textAlign: 'center', position: 'relative', overflow: 'hidden', border: '1px solid rgba(99, 102, 241, 0.2)', boxShadow: '0 20px 40px rgba(0, 0, 0, 0.3)' }}>
+                            <div style={{ position: 'absolute', top: '-50%', left: '-10%', width: '300px', height: '300px', background: 'radial-gradient(circle, rgba(99,102,241,0.3) 0%, transparent 70%)', filter: 'blur(40px)' }}></div>
+                            <h1 style={{ fontSize: '2.5rem', margin: '0 0 1rem 0', color: '#ffffff', fontWeight: 800, position: 'relative', zIndex: 1, textShadow: '0 2px 10px rgba(0,0,0,0.5)' }}>
+                                Post International Job
                             </h1>
-                            <p style={{ color: '#94a3b8', margin: '0', fontSize: '1.1rem', position: 'relative' }}>
+                            <p style={{ color: '#ffffff', margin: '0', fontSize: '1.1rem', position: 'relative', zIndex: 1 }}>
                                 Create an overseas opportunity and discover global talent
                             </p>
                         </div>
 
                         <div style={{ maxWidth: '800px', margin: '0 auto' }}>
-                            <div style={{ background: 'linear-gradient(145deg, rgba(30,41,59,0.8), rgba(15,23,42,0.9))', padding: '2.5rem', borderRadius: '24px', border: '1px solid rgba(255,255,255,0.08)', boxShadow: '0 10px 40px rgba(0,0,0,0.3)', position: 'relative', overflow: 'hidden' }}>
-                                <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '4px', background: 'linear-gradient(90deg, #3b82f6, #10b981)' }} />
+                            <div style={{ background: 'white', padding: '2.5rem', borderRadius: '24px', border: '1px solid #e2e8f0', boxShadow: '0 10px 30px rgba(0,0,0,0.06)', position: 'relative', overflow: 'hidden' }}>
+                                <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '4px', background: 'linear-gradient(90deg, #4f46e5, #8b5cf6)' }} />
                                 
                                 <form onSubmit={handlePostIntlJob}>
-                                    <h3 style={{ color: '#f1f5f9', marginTop: 0, marginBottom: '1.5rem', fontSize: '1.25rem', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '0.75rem' }}>Job Details</h3>
+                                    <h3 style={{ color: '#0f172a', marginTop: 0, marginBottom: '1.5rem', fontSize: '1.25rem', borderBottom: '1px solid #e2e8f0', paddingBottom: '0.75rem', fontWeight: 700 }}>Job Details</h3>
                                     
                                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginBottom: '1.5rem' }}>
                                         <div>
-                                            <label style={{ color: '#cbd5e1', fontWeight: 500, marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.9rem' }}><span>📝</span> Job Title *</label>
-                                            <input type="text" value={intlJob.title} onChange={e => setIntlJob({...intlJob, title: e.target.value})} required placeholder="e.g., Senior Developer" style={{ width: '100%', padding: '0.85rem 1rem', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.03)', color: 'white', fontSize: '0.95rem', outline: 'none', transition: 'all 0.3s' }} onFocus={e => { e.target.style.borderColor = '#3b82f6'; e.target.style.background = 'rgba(255,255,255,0.06)'; }} onBlur={e => { e.target.style.borderColor = 'rgba(255,255,255,0.1)'; e.target.style.background = 'rgba(255,255,255,0.03)'; }} />
+                                            <label style={{ color: '#475569', fontWeight: 600, marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.9rem' }}><span>📝</span> Job Title *</label>
+                                            <input type="text" value={intlJob.title} onChange={e => setIntlJob({...intlJob, title: e.target.value})} required placeholder="e.g., Senior Developer" style={{ width: '100%', padding: '0.85rem 1rem', borderRadius: '12px', border: '1px solid #cbd5e1', background: '#f8fafc', color: '#0f172a', fontSize: '0.95rem', outline: 'none', transition: 'all 0.3s' }} onFocus={e => { e.target.style.borderColor = '#4f46e5'; e.target.style.background = '#ffffff'; }} onBlur={e => { e.target.style.borderColor = '#cbd5e1'; e.target.style.background = '#f8fafc'; }} />
                                         </div>
                                         <div>
-                                            <label style={{ color: '#cbd5e1', fontWeight: 500, marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.9rem' }}><span>💼</span> Job Type *</label>
-                                            <select value={intlJob.type} onChange={e => setIntlJob({...intlJob, type: e.target.value})} style={{ width: '100%', padding: '0.85rem 1rem', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(15,23,42,0.9)', color: 'white', fontSize: '0.95rem', outline: 'none', transition: 'all 0.3s', cursor: 'pointer' }} onFocus={e => e.target.style.borderColor = '#3b82f6'} onBlur={e => e.target.style.borderColor = 'rgba(255,255,255,0.1)'}>
+                                            <label style={{ color: '#475569', fontWeight: 600, marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.9rem' }}><span>💼</span> Job Type *</label>
+                                            <select value={intlJob.type} onChange={e => setIntlJob({...intlJob, type: e.target.value})} style={{ width: '100%', padding: '0.85rem 1rem', borderRadius: '12px', border: '1px solid #cbd5e1', background: '#f8fafc', color: '#0f172a', fontSize: '0.95rem', outline: 'none', transition: 'all 0.3s', cursor: 'pointer' }} onFocus={e => e.target.style.borderColor = '#4f46e5'} onBlur={e => e.target.style.borderColor = '#cbd5e1'}>
                                                 <option value="white">White-Collar (Professional)</option>
                                                 <option value="blue">Blue-Collar (Skilled Labor)</option>
                                             </select>
                                         </div>
                                     </div>
                                     
-                                    <h3 style={{ color: '#f1f5f9', marginTop: '2rem', marginBottom: '1.5rem', fontSize: '1.25rem', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '0.75rem' }}>Location & Compensation</h3>
+                                    <h3 style={{ color: '#0f172a', marginTop: '2rem', marginBottom: '1.5rem', fontSize: '1.25rem', borderBottom: '1px solid #e2e8f0', paddingBottom: '0.75rem', fontWeight: 700 }}>Location & Compensation</h3>
                                     
                                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginBottom: '1.5rem' }}>
                                         <div>
-                                            <label style={{ color: '#cbd5e1', fontWeight: 500, marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.9rem' }}><span>🌍</span> Country *</label>
-                                            <select value={intlJob.country} onChange={e => setIntlJob({...intlJob, country: e.target.value})} required style={{ width: '100%', padding: '0.85rem 1rem', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(15,23,42,0.9)', color: 'white', fontSize: '0.95rem', outline: 'none', transition: 'all 0.3s', cursor: 'pointer' }} onFocus={e => e.target.style.borderColor = '#3b82f6'} onBlur={e => e.target.style.borderColor = 'rgba(255,255,255,0.1)'}>
+                                            <label style={{ color: '#475569', fontWeight: 600, marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.9rem' }}><span>🌍</span> Country *</label>
+                                            <select value={intlJob.country} onChange={e => setIntlJob({...intlJob, country: e.target.value})} required style={{ width: '100%', padding: '0.85rem 1rem', borderRadius: '12px', border: '1px solid #cbd5e1', background: '#f8fafc', color: '#0f172a', fontSize: '0.95rem', outline: 'none', transition: 'all 0.3s', cursor: 'pointer' }} onFocus={e => e.target.style.borderColor = '#4f46e5'} onBlur={e => e.target.style.borderColor = '#cbd5e1'}>
                                                 <option value="">Select Country</option>
                                                 {COUNTRIES.map(c => <option key={c} value={c}>{c}</option>)}
                                             </select>
                                         </div>
                                         <div>
-                                            <label style={{ color: '#cbd5e1', fontWeight: 500, marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.9rem' }}><span>🏙️</span> City</label>
-                                            <input type="text" value={intlJob.city} onChange={e => setIntlJob({...intlJob, city: e.target.value})} placeholder="e.g., Dubai" style={{ width: '100%', padding: '0.85rem 1rem', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.03)', color: 'white', fontSize: '0.95rem', outline: 'none', transition: 'all 0.3s' }} onFocus={e => { e.target.style.borderColor = '#3b82f6'; e.target.style.background = 'rgba(255,255,255,0.06)'; }} onBlur={e => { e.target.style.borderColor = 'rgba(255,255,255,0.1)'; e.target.style.background = 'rgba(255,255,255,0.03)'; }} />
+                                            <label style={{ color: '#475569', fontWeight: 600, marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.9rem' }}><span>🏙️</span> City</label>
+                                            <input type="text" value={intlJob.city} onChange={e => setIntlJob({...intlJob, city: e.target.value})} placeholder="e.g., Dubai" style={{ width: '100%', padding: '0.85rem 1rem', borderRadius: '12px', border: '1px solid #cbd5e1', background: '#f8fafc', color: '#0f172a', fontSize: '0.95rem', outline: 'none', transition: 'all 0.3s' }} onFocus={e => { e.target.style.borderColor = '#4f46e5'; e.target.style.background = '#ffffff'; }} onBlur={e => { e.target.style.borderColor = '#cbd5e1'; e.target.style.background = '#f8fafc'; }} />
                                         </div>
                                     </div>
                                     
                                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginBottom: '2rem' }}>
                                         <div>
-                                            <label style={{ color: '#cbd5e1', fontWeight: 500, marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.9rem' }}><span>💰</span> Salary</label>
-                                            <input type="text" value={intlJob.salary} onChange={e => setIntlJob({...intlJob, salary: e.target.value})} placeholder="e.g., 5000/month" style={{ width: '100%', padding: '0.85rem 1rem', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.03)', color: 'white', fontSize: '0.95rem', outline: 'none', transition: 'all 0.3s' }} onFocus={e => { e.target.style.borderColor = '#10b981'; e.target.style.background = 'rgba(255,255,255,0.06)'; }} onBlur={e => { e.target.style.borderColor = 'rgba(255,255,255,0.1)'; e.target.style.background = 'rgba(255,255,255,0.03)'; }} />
+                                            <label style={{ color: '#475569', fontWeight: 600, marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.9rem' }}><span>💰</span> Salary</label>
+                                            <input type="text" value={intlJob.salary} onChange={e => setIntlJob({...intlJob, salary: e.target.value})} placeholder="e.g., 5000/month" style={{ width: '100%', padding: '0.85rem 1rem', borderRadius: '12px', border: '1px solid #cbd5e1', background: '#f8fafc', color: '#0f172a', fontSize: '0.95rem', outline: 'none', transition: 'all 0.3s' }} onFocus={e => { e.target.style.borderColor = '#059669'; e.target.style.background = '#ffffff'; }} onBlur={e => { e.target.style.borderColor = '#cbd5e1'; e.target.style.background = '#f8fafc'; }} />
                                         </div>
                                         <div>
-                                            <label style={{ color: '#cbd5e1', fontWeight: 500, marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.9rem' }}><span>💵</span> Currency</label>
-                                            <select value={intlJob.currency} onChange={e => setIntlJob({...intlJob, currency: e.target.value})} style={{ width: '100%', padding: '0.85rem 1rem', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(15,23,42,0.9)', color: 'white', fontSize: '0.95rem', outline: 'none', transition: 'all 0.3s', cursor: 'pointer' }} onFocus={e => e.target.style.borderColor = '#10b981'} onBlur={e => e.target.style.borderColor = 'rgba(255,255,255,0.1)'}>
+                                            <label style={{ color: '#475569', fontWeight: 600, marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.9rem' }}><span>💵</span> Currency</label>
+                                            <select value={intlJob.currency} onChange={e => setIntlJob({...intlJob, currency: e.target.value})} style={{ width: '100%', padding: '0.85rem 1rem', borderRadius: '12px', border: '1px solid #cbd5e1', background: '#f8fafc', color: '#0f172a', fontSize: '0.95rem', outline: 'none', transition: 'all 0.3s', cursor: 'pointer' }} onFocus={e => e.target.style.borderColor = '#059669'} onBlur={e => e.target.style.borderColor = '#cbd5e1'}>
                                                 {CURRENCIES.map(c => <option key={c} value={c}>{c}</option>)}
                                             </select>
                                         </div>
                                     </div>
                                     
-                                    <h3 style={{ color: '#f1f5f9', marginTop: '2rem', marginBottom: '1.5rem', fontSize: '1.25rem', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '0.75rem' }}>Role Description & Requirements</h3>
+                                    <h3 style={{ color: '#0f172a', marginTop: '2rem', marginBottom: '1.5rem', fontSize: '1.25rem', borderBottom: '1px solid #e2e8f0', paddingBottom: '0.75rem', fontWeight: 700 }}>Role Description & Requirements</h3>
                                     
                                     <div style={{ marginBottom: '1.5rem' }}>
-                                        <label style={{ color: '#cbd5e1', fontWeight: 500, marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.9rem' }}><span>📄</span> Description</label>
-                                        <textarea value={intlJob.description} onChange={e => setIntlJob({...intlJob, description: e.target.value})} placeholder="Describe the role, responsibilities..." rows={4} style={{ width: '100%', padding: '1rem', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.03)', color: 'white', fontSize: '0.95rem', outline: 'none', transition: 'all 0.3s', resize: 'vertical' }} onFocus={e => { e.target.style.borderColor = '#a855f7'; e.target.style.background = 'rgba(255,255,255,0.06)'; }} onBlur={e => { e.target.style.borderColor = 'rgba(255,255,255,0.1)'; e.target.style.background = 'rgba(255,255,255,0.03)'; }} />
+                                        <label style={{ color: '#475569', fontWeight: 600, marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.9rem' }}><span>📄</span> Description</label>
+                                        <textarea value={intlJob.description} onChange={e => setIntlJob({...intlJob, description: e.target.value})} placeholder="Describe the role, responsibilities..." rows={4} style={{ width: '100%', padding: '1rem', borderRadius: '12px', border: '1px solid #cbd5e1', background: '#f8fafc', color: '#0f172a', fontSize: '0.95rem', outline: 'none', transition: 'all 0.3s', resize: 'vertical' }} onFocus={e => { e.target.style.borderColor = '#4f46e5'; e.target.style.background = '#ffffff'; }} onBlur={e => { e.target.style.borderColor = '#cbd5e1'; e.target.style.background = '#f8fafc'; }} />
                                     </div>
                                     <div style={{ marginBottom: '1.5rem' }}>
-                                        <label style={{ color: '#cbd5e1', fontWeight: 500, marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.9rem' }}><span>✅</span> Requirements</label>
-                                        <textarea value={intlJob.requirements} onChange={e => setIntlJob({...intlJob, requirements: e.target.value})} placeholder="e.g., 3+ years experience, valid passport..." rows={3} style={{ width: '100%', padding: '1rem', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.03)', color: 'white', fontSize: '0.95rem', outline: 'none', transition: 'all 0.3s', resize: 'vertical' }} onFocus={e => { e.target.style.borderColor = '#a855f7'; e.target.style.background = 'rgba(255,255,255,0.06)'; }} onBlur={e => { e.target.style.borderColor = 'rgba(255,255,255,0.1)'; e.target.style.background = 'rgba(255,255,255,0.03)'; }} />
+                                        <label style={{ color: '#475569', fontWeight: 600, marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.9rem' }}><span>✅</span> Requirements</label>
+                                        <textarea value={intlJob.requirements} onChange={e => setIntlJob({...intlJob, requirements: e.target.value})} placeholder="e.g., 3+ years experience, valid passport..." rows={3} style={{ width: '100%', padding: '1rem', borderRadius: '12px', border: '1px solid #cbd5e1', background: '#f8fafc', color: '#0f172a', fontSize: '0.95rem', outline: 'none', transition: 'all 0.3s', resize: 'vertical' }} onFocus={e => { e.target.style.borderColor = '#4f46e5'; e.target.style.background = '#ffffff'; }} onBlur={e => { e.target.style.borderColor = '#cbd5e1'; e.target.style.background = '#f8fafc'; }} />
                                     </div>
                                     <div style={{ marginBottom: '1.5rem' }}>
-                                        <label style={{ color: '#cbd5e1', fontWeight: 500, marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.9rem' }}><span>🎁</span> Benefits</label>
-                                        <textarea value={intlJob.benefits} onChange={e => setIntlJob({...intlJob, benefits: e.target.value})} placeholder="e.g., Free accommodation, annual flights..." rows={3} style={{ width: '100%', padding: '1rem', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.03)', color: 'white', fontSize: '0.95rem', outline: 'none', transition: 'all 0.3s', resize: 'vertical' }} onFocus={e => { e.target.style.borderColor = '#a855f7'; e.target.style.background = 'rgba(255,255,255,0.06)'; }} onBlur={e => { e.target.style.borderColor = 'rgba(255,255,255,0.1)'; e.target.style.background = 'rgba(255,255,255,0.03)'; }} />
+                                        <label style={{ color: '#475569', fontWeight: 600, marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.9rem' }}><span>🎁</span> Benefits</label>
+                                        <textarea value={intlJob.benefits} onChange={e => setIntlJob({...intlJob, benefits: e.target.value})} placeholder="e.g., Free accommodation, annual flights..." rows={3} style={{ width: '100%', padding: '1rem', borderRadius: '12px', border: '1px solid #cbd5e1', background: '#f8fafc', color: '#0f172a', fontSize: '0.95rem', outline: 'none', transition: 'all 0.3s', resize: 'vertical' }} onFocus={e => { e.target.style.borderColor = '#4f46e5'; e.target.style.background = '#ffffff'; }} onBlur={e => { e.target.style.borderColor = '#cbd5e1'; e.target.style.background = '#f8fafc'; }} />
                                     </div>
                                     
-                                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '2rem', padding: '1.25rem', borderRadius: '16px', background: 'linear-gradient(90deg, rgba(16,185,129,0.05), rgba(16,185,129,0.15))', border: '1px solid rgba(16,185,129,0.2)' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '2rem', padding: '1.25rem', borderRadius: '16px', background: '#f0fdf4', border: '1px solid #bbf7d0' }}>
                                         <div>
-                                            <span style={{ color: '#10b981', fontWeight: 600, fontSize: '1.05rem', display: 'block', marginBottom: '4px' }}>✈️ Visa Sponsored</span>
-                                            <span style={{ color: '#94a3b8', fontSize: '0.85rem' }}>Are you providing visa assistance for this role?</span>
+                                            <span style={{ color: '#059669', fontWeight: 600, fontSize: '1.05rem', display: 'block', marginBottom: '4px' }}>✈️ Visa Sponsored</span>
+                                            <span style={{ color: '#475569', fontSize: '0.85rem' }}>Are you providing visa assistance for this role?</span>
                                         </div>
                                         <label className="switch" style={{ marginBottom: 0, transform: 'scale(1.1)' }}>
                                             <input type="checkbox" checked={intlJob.visa_sponsored} onChange={e => setIntlJob({...intlJob, visa_sponsored: e.target.checked})} />
@@ -889,10 +895,10 @@ const EmployerDashboard = ({ user, logout }) => {
                                     </div>
                                     
                                     <div style={{ display: 'flex', gap: '1rem' }}>
-                                        <button type="submit" disabled={submittingIntl} className="btn btn-primary" style={{ flex: 2, padding: '1rem', fontSize: '1.05rem', fontWeight: 600, borderRadius: '14px', background: 'linear-gradient(135deg, #3b82f6, #2563eb)', border: 'none', boxShadow: '0 4px 15px rgba(37,99,235,0.3)', transition: 'all 0.3s', color: 'white' }} onMouseOver={e => { if(!e.currentTarget.disabled) { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 6px 20px rgba(37,99,235,0.4)'; } }} onMouseOut={e => { if(!e.currentTarget.disabled) { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 4px 15px rgba(37,99,235,0.3)'; } }}>
-                                            {submittingIntl ? '⏳ Posting...' : '🌍 Publish International Job'}
+                                        <button type="submit" disabled={submittingIntl} className="btn btn-primary" style={{ flex: 2, padding: '1rem', fontSize: '1.05rem', fontWeight: 600, borderRadius: '14px', background: 'linear-gradient(135deg, #4f46e5, #6366f1)', border: 'none', boxShadow: '0 4px 15px rgba(79,70,229,0.3)', transition: 'all 0.3s', color: 'white' }} onMouseOver={e => { if(!e.currentTarget.disabled) { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 6px 20px rgba(79,70,229,0.4)'; } }} onMouseOut={e => { if(!e.currentTarget.disabled) { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 4px 15px rgba(79,70,229,0.3)'; } }}>
+                                            {submittingIntl ? '⏳ Posting...' : 'Publish International Job'}
                                         </button>
-                                        <button type="button" onClick={() => setActiveView('my-international-jobs')} className="btn btn-secondary" style={{ flex: 1, padding: '1rem', fontSize: '1.05rem', fontWeight: 500, borderRadius: '14px', background: 'rgba(255,255,255,0.05)', color: '#cbd5e1', border: '1px solid rgba(255,255,255,0.1)', transition: 'all 0.3s' }} onMouseOver={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.1)'; e.currentTarget.style.color = '#fff'; }} onMouseOut={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; e.currentTarget.style.color = '#cbd5e1'; }}>
+                                        <button type="button" onClick={() => setActiveView('my-international-jobs')} className="btn btn-secondary" style={{ flex: 1, padding: '1rem', fontSize: '1.05rem', fontWeight: 500, borderRadius: '14px', background: '#f1f5f9', color: '#475569', border: '1px solid #e2e8f0', transition: 'all 0.3s' }} onMouseOver={e => { e.currentTarget.style.background = '#e2e8f0'; e.currentTarget.style.color = '#0f172a'; }} onMouseOut={e => { e.currentTarget.style.background = '#f1f5f9'; e.currentTarget.style.color = '#475569'; }}>
                                             Cancel
                                         </button>
                                     </div>
@@ -920,11 +926,10 @@ const EmployerDashboard = ({ user, logout }) => {
                             <div style={{ position: 'absolute', top: '-20%', left: '-10%', width: '300px', height: '300px', background: 'radial-gradient(circle, rgba(79,70,229,0.2) 0%, transparent 70%)', filter: 'blur(50px)' }}></div>
                             <div style={{ position: 'absolute', bottom: '-10%', right: '-5%', width: '250px', height: '250px', background: 'radial-gradient(circle, rgba(16,185,129,0.1) 0%, transparent 70%)', filter: 'blur(40px)' }}></div>
                             <div style={{ position: 'relative', zIndex: 1 }}>
-                                <span style={{ fontSize: '3rem', display: 'block', marginBottom: '1rem' }}>🌍</span>
-                                <h1 style={{ margin: '0 0 0.5rem 0', fontSize: '2.5rem', background: 'linear-gradient(to right, #fff, #94a3b8)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', fontWeight: 800 }}>
+                                <h1 style={{ margin: '0 0 0.5rem 0', fontSize: '2.5rem', color: '#ffffff', fontWeight: 800 }}>
                                     My International Postings
                                 </h1>
-                                <p style={{ color: '#94a3b8', fontSize: '1.1rem', maxWidth: '500px', margin: '0 auto' }}>
+                                <p style={{ color: '#cbd5e1', fontSize: '1.1rem', maxWidth: '500px', margin: '0 auto' }}>
                                     Manage your global listings, track international talent, and handle visa sponsorships seamlessly.
                                 </p>
                             </div>
@@ -958,25 +963,24 @@ const EmployerDashboard = ({ user, logout }) => {
                             {loadingMyIntlJobs ? (
                                 <div style={{ textAlign: 'center', padding: '3rem', color: '#94a3b8' }}>Loading your international jobs...</div>
                             ) : myIntlJobs.length === 0 ? (
-                                <div className="bc-glass-card" style={{ textAlign: 'center', padding: '3rem', color: '#94a3b8' }}>
-                                    <span style={{ fontSize: '3rem', display: 'block', marginBottom: '1rem' }}>🌍</span>
-                                    <p>You haven't posted any international jobs yet.</p>
+                                <div style={{ textAlign: 'center', padding: '3rem', background: '#ffffff', borderRadius: '16px', border: '1px dashed #cbd5e1' }}>
+                                    <p style={{ color: '#64748b' }}>You haven't posted any international jobs yet.</p>
                                     <button className="btn btn-primary" onClick={() => setActiveView('post-international')} style={{ marginTop: '1rem' }}>Post Your First International Job</button>
                                 </div>
                             ) : (
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                                     {myIntlJobs.map(job => (
-                                        <div key={job.id} className="bc-glass-card" style={{ padding: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', borderLeft: '4px solid ' + (job.type === 'blue' ? '#3b82f6' : '#8b5cf6'), transition: 'transform 0.2s, box-shadow 0.2s' }} onMouseOver={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 8px 25px rgba(0,0,0,0.3)'; }} onMouseOut={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none'; }}>
+                                        <div key={job.id} style={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '16px', padding: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', borderLeft: '4px solid ' + (job.type === 'blue' ? '#3b82f6' : '#8b5cf6'), transition: 'transform 0.2s, box-shadow 0.2s', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)' }} onMouseOver={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 10px 25px rgba(0,0,0,0.1)'; }} onMouseOut={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 4px 6px -1px rgba(0,0,0,0.05)'; }}>
                                             <div style={{ flex: 1 }}>
                                                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.5rem' }}>
-                                                    <h3 style={{ color: '#e2e8f0', margin: 0, fontSize: '1.15rem', textTransform: 'capitalize' }}>{job.title}</h3>
-                                                    <span style={{ background: job.status === 'Active' ? 'rgba(34,197,94,0.15)' : 'rgba(245,158,11,0.15)', color: job.status === 'Active' ? '#22c55e' : '#f59e0b', padding: '2px 10px', borderRadius: '20px', fontSize: '0.7rem', fontWeight: 600 }}>● {job.status}</span>
+                                                    <h3 style={{ color: '#0f172a', margin: 0, fontSize: '1.15rem', textTransform: 'capitalize', fontWeight: 700 }}>{job.title}</h3>
+                                                    <span style={{ background: job.status === 'Active' ? '#dcfce7' : '#fef3c7', color: job.status === 'Active' ? '#166534' : '#92400e', padding: '2px 10px', borderRadius: '20px', fontSize: '0.7rem', fontWeight: 600 }}>● {job.status}</span>
                                                 </div>
-                                                <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', color: '#94a3b8', fontSize: '0.8rem' }}>
-                                                    <span style={{ background: 'rgba(255,255,255,0.04)', padding: '3px 10px', borderRadius: '8px' }}>📍 {job.city ? job.city + ', ' : ''}{job.country}</span>
-                                                    <span style={{ background: 'rgba(34,197,94,0.06)', padding: '3px 10px', borderRadius: '8px', color: '#22c55e', fontWeight: 500 }}>💰 {job.currency} {job.salary}</span>
-                                                    <span style={{ background: job.type === 'blue' ? 'rgba(59,130,246,0.1)' : 'rgba(139,92,246,0.1)', padding: '3px 10px', borderRadius: '8px', color: job.type === 'blue' ? '#60a5fa' : '#c084fc' }}>{job.type === 'blue' ? '🔧 Blue-Collar' : '💼 White-Collar'}</span>
-                                                    {job.visa_sponsored && <span style={{ background: 'rgba(16,185,129,0.1)', padding: '3px 10px', borderRadius: '8px', color: '#10b981' }}>✈️ Visa</span>}
+                                                <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', color: '#475569', fontSize: '0.8rem' }}>
+                                                    <span style={{ background: '#f1f5f9', padding: '3px 10px', borderRadius: '8px' }}>📍 {job.city ? job.city + ', ' : ''}{job.country}</span>
+                                                    <span style={{ background: '#ecfdf5', padding: '3px 10px', borderRadius: '8px', color: '#059669', fontWeight: 500 }}>💰 {job.currency} {job.salary}</span>
+                                                    <span style={{ background: job.type === 'blue' ? '#eff6ff' : '#f3e8ff', padding: '3px 10px', borderRadius: '8px', color: job.type === 'blue' ? '#2563eb' : '#7e22ce' }}>{job.type === 'blue' ? '🔧 Blue-Collar' : '💼 White-Collar'}</span>
+                                                    {job.visa_sponsored && <span style={{ background: '#ecfdf5', padding: '3px 10px', borderRadius: '8px', color: '#059669' }}>✈️ Visa</span>}
                                                 </div>
                                                 <p style={{ color: '#64748b', fontSize: '0.8rem', margin: '0.5rem 0 0 0', display: '-webkit-box', WebkitLineClamp: 1, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{job.description}</p>
                                             </div>
@@ -1084,7 +1088,7 @@ const EmployerDashboard = ({ user, logout }) => {
                                                                 style={{ padding: '6px 12px', fontSize: '0.8rem', background: '#3b82f6', color: '#fff', border: 'none', borderRadius: '8px', fontWeight: 600 }}
                                                                 onClick={() => {
                                                                     const token = sessionStorage.getItem('token');
-                                                                    fetch('http://localhost:5000/api/chat/start', {
+                                                                    fetch(`${BASE_URL}/api/chat/start`, {
                                                                         method: 'POST',
                                                                         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                                                                         body: JSON.stringify({ job_id: null, candidate_id: app.applicant_id })
@@ -1608,9 +1612,15 @@ const EmployerDashboard = ({ user, logout }) => {
             {/* -------------------- BOOK WORKERS VIEW -------------------- */}
             {activeView === 'book-workers' && (
                 <section style={{ padding: '0' }}>
-                    <div style={{ background: 'linear-gradient(135deg, #0f172a 0%, #334155 100%)', padding: '3rem 2rem', borderRadius: '24px', marginBottom: '2rem', textAlign: 'center' }}>
-                        <h1 style={{ fontSize: '2.2rem', color: '#fff', fontWeight: 800 }}>📅 Book Workers</h1>
-                        <p style={{ color: '#94a3b8' }}>Find and schedule blue-collar workers for your tasks</p>
+                    {/* Premium Hero Banner */}
+                    <div style={{ background: 'linear-gradient(135deg, #0f172a 0%, #312e81 50%, #0f172a 100%)', padding: '3.5rem 2rem', borderRadius: '24px', marginBottom: '2.5rem', textAlign: 'center', position: 'relative', overflow: 'hidden', border: '1px solid rgba(99, 102, 241, 0.2)', boxShadow: '0 20px 40px rgba(0, 0, 0, 0.3)' }}>
+                        <div style={{ position: 'absolute', top: '-50%', left: '-10%', width: '300px', height: '300px', background: 'radial-gradient(circle, rgba(99,102,241,0.3) 0%, transparent 70%)', filter: 'blur(40px)' }}></div>
+                        <h1 style={{ fontSize: '2.5rem', margin: '0 0 1rem 0', color: '#ffffff', fontWeight: 800, position: 'relative', zIndex: 1, textShadow: '0 2px 10px rgba(0,0,0,0.5)' }}>
+                            Book Workers
+                        </h1>
+                        <p style={{ color: '#ffffff', margin: '0', fontSize: '1.1rem', position: 'relative', zIndex: 1 }}>
+                            Find and schedule blue-collar workers for your tasks
+                        </p>
                     </div>
 
                     <div style={{ maxWidth: '1100px', margin: '0 auto' }}>

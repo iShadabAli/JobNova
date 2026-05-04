@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import '../index.css';
 import ComplaintModal from '../components/ComplaintModal';
+import { BASE_URL } from '../utils/api';
 
 const PublicProfile = () => {
     const { userId } = useParams();
@@ -15,7 +16,7 @@ const PublicProfile = () => {
         const fetchProfile = async () => {
             try {
                 const token = sessionStorage.getItem('token');
-                const response = await fetch(`http://localhost:5000/api/profile/public/${userId}`, {
+                const response = await fetch(`${BASE_URL}/api/profile/public/${userId}`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
                 if (!response.ok) {

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import '../index.css';
+import { BASE_URL } from '../utils/api';
 
 const ChatBox = ({ session, currentUser, onClose, onCloseWidget, onSessionUpdated }) => {
     const [messages, setMessages] = useState([]);
@@ -13,7 +14,7 @@ const ChatBox = ({ session, currentUser, onClose, onCloseWidget, onSessionUpdate
         const fetchMyProfileId = async () => {
             try {
                 const token = sessionStorage.getItem('token');
-                const res = await fetch('http://localhost:5000/api/profile', {
+                const res = await fetch(`${BASE_URL}/api/profile`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
                 if (res.ok) {
@@ -41,7 +42,7 @@ const ChatBox = ({ session, currentUser, onClose, onCloseWidget, onSessionUpdate
             if (!isPolling) setLoading(true);
             try {
                 const token = sessionStorage.getItem('token');
-                const response = await fetch(`http://localhost:5000/api/chat/${session.id}/messages`, {
+                const response = await fetch(`${BASE_URL}/api/chat/${session.id}/messages`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
                 
@@ -67,7 +68,7 @@ const ChatBox = ({ session, currentUser, onClose, onCloseWidget, onSessionUpdate
         const markAsRead = async () => {
             try {
                 const token = sessionStorage.getItem('token');
-                await fetch(`http://localhost:5000/api/chat/${session.id}/read`, {
+                await fetch(`${BASE_URL}/api/chat/${session.id}/read`, {
                     method: 'PATCH',
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
@@ -101,7 +102,7 @@ const ChatBox = ({ session, currentUser, onClose, onCloseWidget, onSessionUpdate
 
         try {
             const token = sessionStorage.getItem('token');
-            const res = await fetch(`http://localhost:5000/api/chat/${session.id}/message`, {
+            const res = await fetch(`${BASE_URL}/api/chat/${session.id}/message`, {
                 method: 'POST',
                 headers: { 
                     'Content-Type': 'application/json',

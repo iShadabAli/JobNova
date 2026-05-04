@@ -9,6 +9,7 @@ import VoiceSearchOverlay from '../components/VoiceSearchOverlay';
 import ChatWidget from '../components/ChatWidget';
 import '../index.css';
 import { parseVoiceCommand } from '../utils/voiceCommandParser';
+import { BASE_URL } from '../utils/api';
 
 const DAYS_OF_WEEK = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
@@ -102,7 +103,7 @@ const translations = {
         card_bookings_desc: 'View your scheduled jobs',
         card_schedule: 'My Schedule',
         card_schedule_desc: 'Set your availability & work hours',
-        te_header: 'Time Exchange ✈️',
+        te_header: 'Time Exchange',
         te_subtitle: 'Travel and Work Explorer',
         te_announce_btn: 'Announce My Travel',
         te_from_label: 'From City',
@@ -163,7 +164,7 @@ const translations = {
         alert_offer_accepted: 'آپ نے کام قبول کر لیا ہے!',
         alert_offer_rejected: 'آپ نے کام مسترد کر دیا ہے۔',
         alert_offer_fail: 'سٹیٹس اپ ڈیٹ کرنے میں مسٔلہ پیش آیا',
-        te_header: 'ٹائم ایکسچینج (Time Exchange) ✈️',
+        te_header: 'ٹائم ایکسچینج (Time Exchange)',
         te_subtitle: 'سفر اور کام کی معلومات',
         te_announce_btn: 'اپنے سفر کا اعلان کریں',
         te_from_label: 'کس شہر سے',
@@ -244,7 +245,7 @@ const BlueCollarDashboard = ({ user, logout }) => {
 
         const fetchMyTravel = async () => {
         try {
-            const res = await fetch(`http://localhost:5000/api/time-exchange/user/${user.id}`);
+            const res = await fetch(`${BASE_URL}/api/time-exchange/user/${user.id}`);
             const result = await res.json();
             if (result.success) setTravelAnnouncements(result.data);
         } catch (err) { console.error('Error fetching travel:', err); }
@@ -253,7 +254,7 @@ const BlueCollarDashboard = ({ user, logout }) => {
     const fetchNetworking = async (toCity) => {
         if (!toCity) return;
         try {
-            const res = await fetch(`http://localhost:5000/api/time-exchange?to_city=${toCity}`);
+            const res = await fetch(`${BASE_URL}/api/time-exchange?to_city=${toCity}`);
             const result = await res.json();
             if (result.success) {
                 // Filter out current user
@@ -266,7 +267,7 @@ const BlueCollarDashboard = ({ user, logout }) => {
         e.preventDefault();
         setLoadingTE(true);
         try {
-            const res = await fetch('http://localhost:5000/api/time-exchange', {
+            const res = await fetch(`${BASE_URL}/api/time-exchange`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ ...travelForm, user_id: user.id })
@@ -292,7 +293,7 @@ const BlueCollarDashboard = ({ user, logout }) => {
                         onClick={async () => {
                             toast.dismiss(t.id);
                             try {
-                                const res = await fetch(`http://localhost:5000/api/time-exchange/${id}`, { method: 'DELETE' });
+                                const res = await fetch(`${BASE_URL}/api/time-exchange/${id}`, { method: 'DELETE' });
                                 const result = await res.json();
                                 if (result.success) {
                                     toast.success(language === 'ur' ? 'حذف کر دیا گیا' : 'Deleted successfully');
@@ -355,7 +356,7 @@ const BlueCollarDashboard = ({ user, logout }) => {
     const fetchMyProfile = async () => {
         try {
             const token = sessionStorage.getItem('token');
-            const res = await fetch('http://localhost:5000/api/profile', { headers: { 'Authorization': `Bearer ${token}` } });
+            const res = await fetch(`${BASE_URL}/api/profile`, { headers: { 'Authorization': `Bearer ${token}` } });
             const result = await res.json();
             if (result.success && result.data?.availability) {
                 const parts = result.data.availability.split('-');
@@ -371,7 +372,7 @@ const BlueCollarDashboard = ({ user, logout }) => {
         setSavingSchedule(true);
         try {
             const token = sessionStorage.getItem('token');
-            const res = await fetch('http://localhost:5000/api/profile', {
+            const res = await fetch(`${BASE_URL}/api/profile`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                 body: JSON.stringify({ availability: `${scheduleForm.start}-${scheduleForm.end}` })
@@ -387,7 +388,7 @@ const BlueCollarDashboard = ({ user, logout }) => {
         setLoadingBookings(true);
         try {
             const token = sessionStorage.getItem('token');
-            const res = await fetch('http://localhost:5000/api/bookings/worker', { headers: { 'Authorization': `Bearer ${token}` } });
+            const res = await fetch(`${BASE_URL}/api/bookings/worker`, { headers: { 'Authorization': `Bearer ${token}` } });
             const result = await res.json();
             if (result.success) setMyBookings(result.data);
         } catch (err) { console.error('Error fetching bookings:', err); }
@@ -397,7 +398,7 @@ const BlueCollarDashboard = ({ user, logout }) => {
     const handleBookingStatus = async (id, status) => {
         try {
             const token = sessionStorage.getItem('token');
-            const res = await fetch(`http://localhost:5000/api/bookings/${id}/status`, {
+            const res = await fetch(`${BASE_URL}/api/bookings/${id}/status`, {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                 body: JSON.stringify({ status })
@@ -436,7 +437,7 @@ const BlueCollarDashboard = ({ user, logout }) => {
         if (!user?.id) return;
         setLoadingTERequests(true);
         try {
-            const res = await fetch(`http://localhost:5000/api/time-exchange/requests/${user.id}`);
+            const res = await fetch(`${BASE_URL}/api/time-exchange/requests/${user.id}`);
             const result = await res.json();
             if (result.success) setTERequests(result.data);
         } catch (err) { console.error('Error fetching TE requests:', err); }
@@ -453,7 +454,7 @@ const BlueCollarDashboard = ({ user, logout }) => {
 
     const handleTERequestStatus = async (requestId, status) => {
         try {
-            const res = await fetch(`http://localhost:5000/api/time-exchange/requests/${requestId}/status`, {
+            const res = await fetch(`${BASE_URL}/api/time-exchange/requests/${requestId}/status`, {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ status })
@@ -487,7 +488,7 @@ const BlueCollarDashboard = ({ user, logout }) => {
         const fetchProfile = async () => {
             try {
                 const token = sessionStorage.getItem('token');
-                const res = await fetch('http://localhost:5000/api/profile', {
+                const res = await fetch(`${BASE_URL}/api/profile`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
                 if (res.ok) {
@@ -535,7 +536,7 @@ const BlueCollarDashboard = ({ user, logout }) => {
         setLoadingIntlJobs(true);
         try {
             const token = sessionStorage.getItem('token');
-            const response = await fetch('http://localhost:5000/api/international-jobs?type=blue', {
+            const response = await fetch(`${BASE_URL}/api/international-jobs?type=blue`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             if (response.ok) {
@@ -567,7 +568,7 @@ const BlueCollarDashboard = ({ user, logout }) => {
     const handleApplyIntlJob = async (jobId) => {
         try {
             const token = sessionStorage.getItem('token');
-            const response = await fetch(`http://localhost:5000/api/international-jobs/${jobId}/apply`, {
+            const response = await fetch(`${BASE_URL}/api/international-jobs/${jobId}/apply`, {
                 method: 'POST',
                 headers: { 
                     'Content-Type': 'application/json',
@@ -594,9 +595,9 @@ const BlueCollarDashboard = ({ user, logout }) => {
         try {
             const token = sessionStorage.getItem('token');
 
-            let url = 'http://localhost:5000/api/jobs/match?type=blue';
+            let url = `${BASE_URL}/api/jobs/match?type=blue`;
             if (userLocation) {
-                url = `http://localhost:5000/api/jobs/nearby?lat=${userLocation.lat}&lng=${userLocation.lng}&radius=${radius}`;
+                url = `${BASE_URL}/api/jobs/nearby?lat=${userLocation.lat}&lng=${userLocation.lng}&radius=${radius}`;
             }
 
             if (termToUse && termToUse.trim() !== '') {
@@ -685,14 +686,14 @@ const BlueCollarDashboard = ({ user, logout }) => {
                 // Fetch Bookings first to cross-reference
                 let bookings = [];
                 try {
-                    const bRes = await fetch('http://localhost:5000/api/bookings/worker', { headers: { 'Authorization': `Bearer ${token}` } });
+                    const bRes = await fetch(`${BASE_URL}/api/bookings/worker`, { headers: { 'Authorization': `Bearer ${token}` } });
                     if (bRes.ok) {
                         const bData = await bRes.json();
                         if (bData.success) bookings = bData.data;
                     }
                 } catch(e) {}
 
-                const response = await fetch('http://localhost:5000/api/jobs/applications/my-applications', {
+                const response = await fetch(`${BASE_URL}/api/jobs/applications/my-applications`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
                 if (response.ok) {
@@ -724,7 +725,7 @@ const BlueCollarDashboard = ({ user, logout }) => {
             setLoadingRatings(true);
             try {
                 const token = sessionStorage.getItem('token');
-                const response = await fetch('http://localhost:5000/api/reviews/me', {
+                const response = await fetch(`${BASE_URL}/api/reviews/me`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
                 if (response.ok) {
@@ -759,7 +760,7 @@ const BlueCollarDashboard = ({ user, logout }) => {
     const handleApply = async (jobId) => {
         try {
             const token = sessionStorage.getItem('token');
-            const response = await fetch(`http://localhost:5000/api/jobs/${jobId}/apply`, {
+            const response = await fetch(`${BASE_URL}/api/jobs/${jobId}/apply`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -770,7 +771,7 @@ const BlueCollarDashboard = ({ user, logout }) => {
             if (response.ok) {
                 toast.success(t('alert_applied'));
                 // Refresh my apps
-                const appsRes = await fetch('http://localhost:5000/api/jobs/applications/my-applications', {
+                const appsRes = await fetch(`${BASE_URL}/api/jobs/applications/my-applications`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
                 if (appsRes.ok) setMyApps(await appsRes.json());
@@ -794,7 +795,7 @@ const BlueCollarDashboard = ({ user, logout }) => {
         setSavingAvailability(true);
         try {
             const token = sessionStorage.getItem('token');
-            const response = await fetch('http://localhost:5000/api/profile', {
+            const response = await fetch(`${BASE_URL}/api/profile`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
@@ -825,7 +826,7 @@ const BlueCollarDashboard = ({ user, logout }) => {
     const handleSubmitReview = async () => {
         try {
             const token = sessionStorage.getItem('token');
-            const response = await fetch('http://localhost:5000/api/reviews', {
+            const response = await fetch(`${BASE_URL}/api/reviews`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -864,7 +865,7 @@ const BlueCollarDashboard = ({ user, logout }) => {
     const handleOfferResponse = async (appId, newStatus) => {
         try {
             const token = sessionStorage.getItem('token');
-            const response = await fetch(`http://localhost:5000/api/jobs/applications/${appId}/status`, {
+            const response = await fetch(`${BASE_URL}/api/jobs/applications/${appId}/status`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
@@ -1063,10 +1064,6 @@ const BlueCollarDashboard = ({ user, logout }) => {
                  {/* --- My Schedule Tab --- */}
                 {activeTab === 'my-schedule' && (
                     <section className="wc-welcome-section">
-                        <div className="wc-welcome-hero" style={{ background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)' }}>
-                            <h1>{t('schedule_header')} ⏱️</h1>
-                            <p>{t('schedule_subtitle')}</p>
-                        </div>
                         <div style={{ maxWidth: '600px', margin: '0 auto', padding: '2rem', background: '#fff', borderRadius: '24px', boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }}>
                             <form onSubmit={saveSchedule} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
                                 <div style={{ display: 'flex', gap: '1rem' }}>
@@ -1090,9 +1087,15 @@ const BlueCollarDashboard = ({ user, logout }) => {
                 {/* --- My Bookings Tab --- */}
                 {activeTab === 'my-bookings' && (
                     <section className="wc-welcome-section">
-                        <div className="wc-welcome-hero" style={{ background: 'linear-gradient(135deg, #1e293b 0%, #334155 100%)' }}>
-                            <h1>{language === 'ur' ? 'میری بکنگز' : 'My Bookings'} 📅</h1>
-                            <p>{language === 'ur' ? 'اپنے شیڈول شدہ کاموں کا نظم کریں' : 'Manage your scheduled jobs'}</p>
+                        {/* Premium Hero Banner */}
+                        <div style={{ background: 'linear-gradient(135deg, #0f172a 0%, #312e81 50%, #0f172a 100%)', padding: '3.5rem 2rem', borderRadius: '24px', marginBottom: '2.5rem', textAlign: 'center', position: 'relative', overflow: 'hidden', border: '1px solid rgba(99, 102, 241, 0.2)', boxShadow: '0 20px 40px rgba(0, 0, 0, 0.3)' }}>
+                            <div style={{ position: 'absolute', top: '-50%', left: '-10%', width: '300px', height: '300px', background: 'radial-gradient(circle, rgba(99,102,241,0.3) 0%, transparent 70%)', filter: 'blur(40px)' }}></div>
+                            <h1 style={{ fontSize: '2.5rem', margin: '0 0 1rem 0', color: '#ffffff', fontWeight: 800, position: 'relative', zIndex: 1, textShadow: '0 2px 10px rgba(0,0,0,0.5)' }}>
+                                {language === 'ur' ? 'میری بکنگز' : 'My Bookings'}
+                            </h1>
+                            <p style={{ color: '#ffffff', margin: '0', fontSize: '1.1rem', position: 'relative', zIndex: 1 }}>
+                                {language === 'ur' ? 'اپنے شیڈول شدہ کاموں کا نظم کریں' : 'Manage your scheduled jobs'}
+                            </p>
                         </div>
                         
                         <div style={{ maxWidth: '1000px', margin: '0 auto', padding: '0 1rem' }}>
@@ -1144,9 +1147,15 @@ const BlueCollarDashboard = ({ user, logout }) => {
                                {/* --- Time Exchange Tab --- */}
                 {activeTab === 'time-exchange' && (
                     <section className="wc-welcome-section">
-                        <div className="wc-welcome-hero" style={{ background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)' }}>
-                            <h1>{t('te_header')}</h1>
-                            <p>{t('te_subtitle')}</p>
+                        {/* Premium Hero Banner */}
+                        <div style={{ background: 'linear-gradient(135deg, #0f172a 0%, #312e81 50%, #0f172a 100%)', padding: '3.5rem 2rem', borderRadius: '24px', marginBottom: '2.5rem', textAlign: 'center', position: 'relative', overflow: 'hidden', border: '1px solid rgba(99, 102, 241, 0.2)', boxShadow: '0 20px 40px rgba(0, 0, 0, 0.3)' }}>
+                            <div style={{ position: 'absolute', top: '-50%', left: '-10%', width: '300px', height: '300px', background: 'radial-gradient(circle, rgba(99,102,241,0.3) 0%, transparent 70%)', filter: 'blur(40px)' }}></div>
+                            <h1 style={{ fontSize: '2.5rem', margin: '0 0 1rem 0', color: '#ffffff', fontWeight: 800, position: 'relative', zIndex: 1, textShadow: '0 2px 10px rgba(0,0,0,0.5)' }}>
+                                {t('te_header')}
+                            </h1>
+                            <p style={{ color: '#ffffff', margin: '0', fontSize: '1.1rem', position: 'relative', zIndex: 1 }}>
+                                {t('te_subtitle')}
+                            </p>
                         </div>
 
                         <div className="te-container" style={{ padding: '2rem', maxWidth: '1200px', margin: '0 auto', display: 'grid', gridTemplateColumns: '1fr 1.5fr', gap: '2rem' }}>
@@ -1325,9 +1334,15 @@ const BlueCollarDashboard = ({ user, logout }) => {
                 {/* --- My Schedule Tab --- */}
                 {activeTab === 'my-schedule' && (
                     <section className="wc-welcome-section">
-                        <div className="wc-welcome-hero">
-                            <h1>{t('card_schedule')} 📅</h1>
-                            <p>{t('card_schedule_desc')}</p>
+                        {/* Premium Hero Banner */}
+                        <div style={{ background: 'linear-gradient(135deg, #0f172a 0%, #312e81 50%, #0f172a 100%)', padding: '3.5rem 2rem', borderRadius: '24px', marginBottom: '2.5rem', textAlign: 'center', position: 'relative', overflow: 'hidden', border: '1px solid rgba(99, 102, 241, 0.2)', boxShadow: '0 20px 40px rgba(0, 0, 0, 0.3)' }}>
+                            <div style={{ position: 'absolute', top: '-50%', left: '-10%', width: '300px', height: '300px', background: 'radial-gradient(circle, rgba(99,102,241,0.3) 0%, transparent 70%)', filter: 'blur(40px)' }}></div>
+                            <h1 style={{ fontSize: '2.5rem', margin: '0 0 1rem 0', color: '#ffffff', fontWeight: 800, position: 'relative', zIndex: 1, textShadow: '0 2px 10px rgba(0,0,0,0.5)' }}>
+                                {t('card_schedule')}
+                            </h1>
+                            <p style={{ color: '#ffffff', margin: '0', fontSize: '1.1rem', position: 'relative', zIndex: 1 }}>
+                                {t('card_schedule_desc')}
+                            </p>
                         </div>
                         <section className="bc-search-section" style={{ padding: '3rem 2rem', borderRadius: '24px', maxWidth: '550px', margin: '0 auto' }}>
                             <div className="bc-glass-card" style={{ textAlign: language === 'ur' ? 'right' : 'left' }}>

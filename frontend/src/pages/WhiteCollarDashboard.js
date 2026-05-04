@@ -8,6 +8,7 @@ import NotificationBell from '../components/NotificationBell';
 import ComplaintModal from '../components/ComplaintModal';
 import VoiceSearchOverlay from '../components/VoiceSearchOverlay';
 import ChatWidget from '../components/ChatWidget';
+import { BASE_URL } from '../utils/api';
 
 const translations = {
     en: {
@@ -70,7 +71,7 @@ const translations = {
         tooltip_mic: 'Search by Voice',
         listening: 'Listening...',
         voice_error: 'Speech recognition failed. Please try again.',
-        te_header: 'Time Exchange ✈️',
+        te_header: 'Time Exchange',
         te_subtitle: 'Travel and Work Explorer',
         te_announce_btn: 'Announce My Travel',
         te_from_label: 'From City',
@@ -173,7 +174,7 @@ const WhiteCollarDashboard = ({ user, logout }) => {
     };
         const fetchMyTravel = async () => {
         try {
-            const res = await fetch(`http://localhost:5000/api/time-exchange/user/${user.id}`);
+            const res = await fetch(`${BASE_URL}/api/time-exchange/user/${user.id}`);
             const result = await res.json();
             if (result.success) setTravelAnnouncements(result.data);
         } catch (err) { console.error('Error fetching travel:', err); }
@@ -182,7 +183,7 @@ const WhiteCollarDashboard = ({ user, logout }) => {
     const fetchNetworking = async (toCity) => {
         if (!toCity) return;
         try {
-            const res = await fetch(`http://localhost:5000/api/time-exchange?to_city=${toCity}`);
+            const res = await fetch(`${BASE_URL}/api/time-exchange?to_city=${toCity}`);
             const result = await res.json();
             if (result.success) {
                 setNetworkingTravelers(result.data.filter(t => t.user_id !== user.id));
@@ -194,7 +195,7 @@ const WhiteCollarDashboard = ({ user, logout }) => {
         e.preventDefault();
         setLoadingTE(true);
         try {
-            const res = await fetch('http://localhost:5000/api/time-exchange', {
+            const res = await fetch(`${BASE_URL}/api/time-exchange`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ ...travelForm, user_id: user.id })
@@ -220,7 +221,7 @@ const WhiteCollarDashboard = ({ user, logout }) => {
                         onClick={async () => {
                             toast.dismiss(t.id);
                             try {
-                                const res = await fetch(`http://localhost:5000/api/time-exchange/${id}`, { method: 'DELETE' });
+                                const res = await fetch(`${BASE_URL}/api/time-exchange/${id}`, { method: 'DELETE' });
                                 const result = await res.json();
                                 if (result.success) {
                                     toast.success(language === 'ur' ? 'حذف کر دیا گیا' : 'Deleted successfully');
@@ -248,7 +249,7 @@ const WhiteCollarDashboard = ({ user, logout }) => {
         if (!user?.id) return;
         setLoadingTERequests(true);
         try {
-            const res = await fetch(`http://localhost:5000/api/time-exchange/requests/${user.id}`);
+            const res = await fetch(`${BASE_URL}/api/time-exchange/requests/${user.id}`);
             const result = await res.json();
             if (result.success) setTERequests(result.data);
         } catch (err) { console.error('Error fetching TE requests:', err); }
@@ -265,7 +266,7 @@ const WhiteCollarDashboard = ({ user, logout }) => {
 
     const handleTERequestStatus = async (requestId, status) => {
         try {
-            const res = await fetch(`http://localhost:5000/api/time-exchange/requests/${requestId}/status`, {
+            const res = await fetch(`${BASE_URL}/api/time-exchange/requests/${requestId}/status`, {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ status })
@@ -307,7 +308,7 @@ const WhiteCollarDashboard = ({ user, logout }) => {
         const fetchIntlJobs = async () => {
             setLoadingIntlJobs(true);
             try {
-                const response = await fetch('http://localhost:5000/api/international-jobs');
+                const response = await fetch(`${BASE_URL}/api/international-jobs`);
                 const result = await response.json();
                 if (result.success) {
                     setIntlJobs(result.data);
@@ -351,14 +352,14 @@ const WhiteCollarDashboard = ({ user, logout }) => {
         const fetchScholarships = async () => {
             setLoadingScholarships(true);
             try {
-                const res = await fetch('http://localhost:5000/api/scholarships');
+                const res = await fetch(`${BASE_URL}/api/scholarships`);
                 const result = await res.json();
                 if (Array.isArray(result)) setScholarships(result);
 
                 if (user?.id) {
                     const token = sessionStorage.getItem('token');
                     if (token) {
-                        const appRes = await fetch('http://localhost:5000/api/scholarships/my-applications', {
+                        const appRes = await fetch(`${BASE_URL}/api/scholarships/my-applications`, {
                             headers: { 'Authorization': `Bearer ${token}` }
                         });
                         const appResult = await appRes.json();
@@ -386,7 +387,7 @@ const WhiteCollarDashboard = ({ user, logout }) => {
         if (!token) return toast.error('Please login to apply');
 
         try {
-            const res = await fetch(`http://localhost:5000/api/scholarships/${scholarship.id}/apply`, {
+            const res = await fetch(`${BASE_URL}/api/scholarships/${scholarship.id}/apply`, {
                 method: 'POST',
                 headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }
             });
@@ -460,7 +461,7 @@ const [travelAnnouncements, setTravelAnnouncements] = useState([]);
         setIsSearchingAI(!!searchTerm); // Show AI processing state if there's a search term
         try {
             const token = sessionStorage.getItem('token');
-            let url = 'http://localhost:5000/api/jobs/match?type=white';
+            let url = `${BASE_URL}/api/jobs/match?type=white`;
             
             if (searchTerm && searchTerm.trim() !== '') {
                 url += url.includes('?') ? `&search=${encodeURIComponent(searchTerm)}` : `?search=${encodeURIComponent(searchTerm)}`;
@@ -487,7 +488,7 @@ const [travelAnnouncements, setTravelAnnouncements] = useState([]);
         const fetchProfile = async () => {
             try {
                 const token = sessionStorage.getItem('token');
-                const res = await fetch('http://localhost:5000/api/profile', {
+                const res = await fetch(`${BASE_URL}/api/profile`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
                 if (res.ok) {
@@ -508,7 +509,7 @@ const [travelAnnouncements, setTravelAnnouncements] = useState([]);
             setLoadingApps(true);
             try {
                 const token = sessionStorage.getItem('token');
-                const response = await fetch('http://localhost:5000/api/jobs/applications/my-applications', {
+                const response = await fetch(`${BASE_URL}/api/jobs/applications/my-applications`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
                 if (response.ok) {
@@ -569,7 +570,7 @@ const [travelAnnouncements, setTravelAnnouncements] = useState([]);
                 const formData = new FormData();
                 formData.append('cv', applyData.cvFile);
 
-                const cvResponse = await fetch('http://localhost:5000/api/profile/upload-cv', {
+                const cvResponse = await fetch(`${BASE_URL}/api/profile/upload-cv`, {
                     method: 'POST',
                     headers: { 'Authorization': `Bearer ${token}` },
                     body: formData
@@ -586,7 +587,7 @@ const [travelAnnouncements, setTravelAnnouncements] = useState([]);
             }
 
             // 2. Submit Application
-            const response = await fetch(`http://localhost:5000/api/jobs/${selectedJobId}/apply`, {
+            const response = await fetch(`${BASE_URL}/api/jobs/${selectedJobId}/apply`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -603,7 +604,7 @@ const [travelAnnouncements, setTravelAnnouncements] = useState([]);
                 setShowApplyModal(false);
                 setApplyData({ cvFile: null, cover_letter: '' });
                 // Refresh Apps
-                const appsRes = await fetch('http://localhost:5000/api/jobs/applications/my-applications', {
+                const appsRes = await fetch(`${BASE_URL}/api/jobs/applications/my-applications`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
                 if (appsRes.ok) setMyApps(await appsRes.json());
@@ -631,7 +632,7 @@ const [travelAnnouncements, setTravelAnnouncements] = useState([]);
     const handleSubmitReview = async () => {
         try {
             const token = sessionStorage.getItem('token');
-            const response = await fetch('http://localhost:5000/api/reviews', {
+            const response = await fetch(`${BASE_URL}/api/reviews`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -693,7 +694,7 @@ const [travelAnnouncements, setTravelAnnouncements] = useState([]);
 
     const handleApplyIntlJob = async (jobId) => {
         try {
-            const response = await fetch(`http://localhost:5000/api/international-jobs/${jobId}/apply`, {
+            const response = await fetch(`${BASE_URL}/api/international-jobs/${jobId}/apply`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ applicant_id: user.id })
@@ -833,32 +834,123 @@ const [travelAnnouncements, setTravelAnnouncements] = useState([]);
                 {/* -------------------- SCHOLARSHIPS TAB -------------------- */}
                 {activeTab === 'scholarships' && (
                     <section style={{ padding: '0 2rem' }}>
-                        <div style={{ background: 'linear-gradient(135deg, #1e293b 0%, #0f172a 100%)', padding: '3rem 2rem', borderRadius: '24px', marginBottom: '2rem', textAlign: 'center', border: '1px solid #334155' }}>
-                            <h1 style={{ fontSize: '2rem', color: '#f8fafc', margin: '0 0 0.5rem' }}>🎓 Educational Scholarships</h1>
-                            <p style={{ color: '#94a3b8', margin: 0 }}>Explore opportunities provided by various institutions</p>
+                        {/* Premium Hero Banner */}
+                        <div style={{ 
+                            background: 'linear-gradient(135deg, #0f172a 0%, #1e3a8a 50%, #0f172a 100%)', 
+                            padding: '3.5rem 2rem', 
+                            borderRadius: '24px', 
+                            marginBottom: '2.5rem', 
+                            textAlign: 'center', 
+                            position: 'relative',
+                            overflow: 'hidden',
+                            border: '1px solid rgba(59, 130, 246, 0.2)',
+                            boxShadow: '0 20px 40px rgba(0, 0, 0, 0.3)'
+                        }}>
+                            <div style={{ position: 'absolute', top: '-50%', left: '-10%', width: '300px', height: '300px', background: 'radial-gradient(circle, rgba(59,130,246,0.3) 0%, transparent 70%)', filter: 'blur(40px)' }}></div>
+                            <h1 style={{ fontSize: '2.5rem', color: '#f8fafc', margin: '0 0 1rem', position: 'relative', zIndex: 1, textShadow: '0 2px 10px rgba(0,0,0,0.5)' }}>🎓 Educational Scholarships</h1>
+                            <p style={{ color: '#cbd5e1', margin: 0, fontSize: '1.1rem', position: 'relative', zIndex: 1 }}>Explore fully-funded opportunities and advance your career.</p>
                         </div>
 
                         {loadingScholarships ? (
-                            <div style={{ textAlign: 'center', padding: '3rem', color: '#94a3b8' }}>Loading scholarships...</div>
+                            <div style={{ textAlign: 'center', padding: '4rem', color: '#94a3b8', fontSize: '1.2rem', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem' }}>
+                                <div className="spinner" style={{ width: '40px', height: '40px', border: '4px solid rgba(59, 130, 246, 0.2)', borderTopColor: '#3b82f6', borderRadius: '50%', animation: 'spin 1s linear infinite' }}></div>
+                                Loading scholarships...
+                            </div>
                         ) : scholarships.length === 0 ? (
-                            <div style={{ textAlign: 'center', padding: '3rem', background: '#f8fafc', borderRadius: '16px', border: '1px dashed #e2e8f0', color: '#64748b' }}>
-                                <h3>No active scholarships found</h3>
-                                <p>Please check back later for new opportunities.</p>
+                            <div style={{ 
+                                textAlign: 'center', 
+                                padding: '5rem 2rem', 
+                                background: 'rgba(30, 41, 59, 0.4)', 
+                                backdropFilter: 'blur(12px)',
+                                borderRadius: '24px', 
+                                border: '1px dashed rgba(148, 163, 184, 0.3)', 
+                                boxShadow: 'inset 0 0 20px rgba(255,255,255,0.02)',
+                                color: '#94a3b8',
+                                display: 'flex',
+                                flexDirection: 'column',
+                                alignItems: 'center',
+                                justifyContent: 'center'
+                            }}>
+                                <div style={{ 
+                                    width: '80px', 
+                                    height: '80px', 
+                                    background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(139, 92, 246, 0.2))', 
+                                    borderRadius: '50%', 
+                                    display: 'flex', 
+                                    alignItems: 'center', 
+                                    justifyContent: 'center', 
+                                    fontSize: '2.5rem', 
+                                    margin: '0 auto 1.5rem',
+                                    border: '1px solid rgba(59, 130, 246, 0.3)',
+                                    boxShadow: '0 0 30px rgba(59, 130, 246, 0.2)'
+                                }}>📚</div>
+                                <h3 style={{ color: '#f8fafc', fontSize: '1.5rem', margin: '0 0 0.75rem', fontWeight: 700 }}>No active scholarships found</h3>
+                                <p style={{ margin: 0, fontSize: '1.05rem', color: '#cbd5e1', maxWidth: '400px' }}>Please check back later. We continuously update our platform with new academic and fully-funded opportunities.</p>
                             </div>
                         ) : (
-                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '24px' }}>
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: '28px' }}>
                                 {scholarships.map(s => {
                                     const hasApplied = myScholarshipApps.includes(s.id);
                                     return (
-                                        <div key={s.id} style={{ background: '#ffffff', borderRadius: '16px', padding: '24px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)', border: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column' }}>
-                                            <div style={{ flex: 1 }}>
-                                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px' }}>
-                                                    <h3 style={{ margin: 0, color: '#1e293b', fontSize: '1.25rem', fontWeight: 700 }}>{s.title}</h3>
-                                                    <span style={{ background: '#eef2ff', color: '#4f46e5', padding: '4px 10px', borderRadius: '20px', fontSize: '0.75rem', fontWeight: 700 }}>{s.provider}</span>
+                                        <div 
+                                            key={s.id} 
+                                            style={{ 
+                                                background: 'rgba(30, 41, 59, 0.7)', 
+                                                backdropFilter: 'blur(12px)',
+                                                borderRadius: '20px', 
+                                                padding: '28px', 
+                                                boxShadow: '0 10px 30px -5px rgba(0,0,0,0.3)', 
+                                                border: '1px solid rgba(255, 255, 255, 0.05)', 
+                                                display: 'flex', 
+                                                flexDirection: 'column',
+                                                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                                                position: 'relative',
+                                                overflow: 'hidden'
+                                            }}
+                                            onMouseOver={e => {
+                                                e.currentTarget.style.transform = 'translateY(-8px)';
+                                                e.currentTarget.style.boxShadow = '0 20px 40px -5px rgba(59, 130, 246, 0.2)';
+                                                e.currentTarget.style.border = '1px solid rgba(59, 130, 246, 0.3)';
+                                            }}
+                                            onMouseOut={e => {
+                                                e.currentTarget.style.transform = 'translateY(0)';
+                                                e.currentTarget.style.boxShadow = '0 10px 30px -5px rgba(0,0,0,0.3)';
+                                                e.currentTarget.style.border = '1px solid rgba(255, 255, 255, 0.05)';
+                                            }}
+                                        >
+                                            {/* Decorative Top Accent */}
+                                            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '4px', background: 'linear-gradient(90deg, #3b82f6, #8b5cf6)' }}></div>
+
+                                            <div style={{ flex: 1, position: 'relative', zIndex: 1 }}>
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '20px' }}>
+                                                    <h3 style={{ margin: 0, color: '#f8fafc', fontSize: '1.4rem', fontWeight: 800, letterSpacing: '-0.02em', lineHeight: 1.3, paddingRight: '1rem' }}>{s.title}</h3>
+                                                    <span style={{ 
+                                                        background: 'rgba(59, 130, 246, 0.15)', 
+                                                        color: '#60a5fa', 
+                                                        padding: '6px 14px', 
+                                                        borderRadius: '20px', 
+                                                        fontSize: '0.75rem', 
+                                                        fontWeight: 700,
+                                                        border: '1px solid rgba(59, 130, 246, 0.3)',
+                                                        whiteSpace: 'nowrap'
+                                                    }}>
+                                                        {s.provider}
+                                                    </span>
                                                 </div>
-                                                <p style={{ color: '#475569', fontSize: '0.95rem', lineHeight: 1.6, marginBottom: '20px' }}>{s.description}</p>
+                                                <p style={{ color: '#94a3b8', fontSize: '1rem', lineHeight: 1.6, marginBottom: '24px' }}>{s.description}</p>
                                                 {s.deadline && (
-                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#dc2626', fontSize: '0.85rem', fontWeight: 600, marginBottom: '20px' }}>
+                                                    <div style={{ 
+                                                        display: 'inline-flex', 
+                                                        alignItems: 'center', 
+                                                        gap: '8px', 
+                                                        color: '#f87171', 
+                                                        fontSize: '0.9rem', 
+                                                        fontWeight: 600, 
+                                                        marginBottom: '24px',
+                                                        background: 'rgba(239, 68, 68, 0.1)',
+                                                        padding: '8px 12px',
+                                                        borderRadius: '8px'
+                                                    }}>
                                                         <span>⏳</span> Deadline: {new Date(s.deadline).toLocaleDateString()}
                                                     </div>
                                                 )}
@@ -867,10 +959,33 @@ const [travelAnnouncements, setTravelAnnouncements] = useState([]);
                                                 onClick={() => handleApplyScholarship(s)}
                                                 disabled={hasApplied && !s.application_link}
                                                 style={{ 
-                                                    width: '100%', padding: '12px', borderRadius: '12px', fontWeight: 700, border: 'none', cursor: (hasApplied && !s.application_link) ? 'not-allowed' : 'pointer',
-                                                    background: (hasApplied && !s.application_link) ? '#e2e8f0' : (s.application_link ? '#3b82f6' : '#10b981'),
-                                                    color: (hasApplied && !s.application_link) ? '#94a3b8' : '#fff',
-                                                    transition: 'all 0.2s'
+                                                    width: '100%', 
+                                                    padding: '14px', 
+                                                    borderRadius: '14px', 
+                                                    fontWeight: 700, 
+                                                    fontSize: '1rem',
+                                                    border: 'none', 
+                                                    cursor: (hasApplied && !s.application_link) ? 'not-allowed' : 'pointer',
+                                                    background: (hasApplied && !s.application_link) 
+                                                        ? 'rgba(71, 85, 105, 0.5)' 
+                                                        : (s.application_link ? 'linear-gradient(135deg, #3b82f6, #2563eb)' : 'linear-gradient(135deg, #10b981, #059669)'),
+                                                    color: (hasApplied && !s.application_link) ? '#94a3b8' : '#ffffff',
+                                                    boxShadow: (hasApplied && !s.application_link) ? 'none' : '0 4px 14px rgba(0,0,0,0.2)',
+                                                    transition: 'all 0.2s',
+                                                    position: 'relative',
+                                                    zIndex: 1
+                                                }}
+                                                onMouseOver={e => {
+                                                    if (!hasApplied || s.application_link) {
+                                                        e.currentTarget.style.transform = 'scale(1.02)';
+                                                        e.currentTarget.style.boxShadow = s.application_link ? '0 6px 20px rgba(59, 130, 246, 0.4)' : '0 6px 20px rgba(16, 185, 129, 0.4)';
+                                                    }
+                                                }}
+                                                onMouseOut={e => {
+                                                    if (!hasApplied || s.application_link) {
+                                                        e.currentTarget.style.transform = 'scale(1)';
+                                                        e.currentTarget.style.boxShadow = '0 4px 14px rgba(0,0,0,0.2)';
+                                                    }
                                                 }}
                                             >
                                                 {s.application_link ? 'Apply on Website ↗' : (hasApplied ? 'Applied ✓' : 'Apply Now')}
@@ -885,78 +1000,121 @@ const [travelAnnouncements, setTravelAnnouncements] = useState([]);
 
                 {/* -------------------- INTERNATIONAL JOBS TAB -------------------- */}
                 {activeTab === 'international-jobs' && (
-                    <section style={{ padding: 0 }}>
-                        {/* Hero Banner */}
-                        <div style={{ background: 'linear-gradient(135deg, #0f172a 0%, #2d1854 50%, #0f172a 100%)', padding: '3rem 2rem', borderRadius: '24px', marginBottom: '2rem', textAlign: 'center', position: 'relative', overflow: 'hidden', border: '1px solid rgba(139,92,246,0.15)' }}>
-                            <div style={{ position: 'absolute', top: '-50%', left: '-20%', width: '300px', height: '300px', background: 'radial-gradient(circle, rgba(139,92,246,0.12), transparent 70%)', pointerEvents: 'none' }} />
-                            <div style={{ position: 'absolute', bottom: '-40%', right: '-10%', width: '250px', height: '250px', background: 'radial-gradient(circle, rgba(59,130,246,0.1), transparent 70%)', pointerEvents: 'none' }} />
-                            <h1 style={{ fontSize: '2rem', margin: '0 0 0.5rem 0', background: 'linear-gradient(135deg, #a78bfa, #60a5fa)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', fontWeight: 700, position: 'relative' }}>
+                    <section style={{ padding: '0 2rem' }}>
+                        {/* Premium Hero Banner */}
+                        <div style={{ 
+                            background: 'linear-gradient(135deg, #0f172a 0%, #312e81 50%, #0f172a 100%)', 
+                            padding: '3.5rem 2rem', 
+                            borderRadius: '24px', 
+                            marginBottom: '2.5rem', 
+                            textAlign: 'center', 
+                            position: 'relative', 
+                            overflow: 'hidden', 
+                            border: '1px solid rgba(99, 102, 241, 0.2)',
+                            boxShadow: '0 20px 40px rgba(0, 0, 0, 0.3)'
+                        }}>
+                            <div style={{ position: 'absolute', top: '-50%', left: '-10%', width: '300px', height: '300px', background: 'radial-gradient(circle, rgba(99,102,241,0.3) 0%, transparent 70%)', filter: 'blur(40px)' }}></div>
+                            <h1 style={{ fontSize: '2.5rem', margin: '0 0 1rem 0', color: '#ffffff', fontWeight: 800, position: 'relative', zIndex: 1, textShadow: '0 2px 10px rgba(0,0,0,0.5)' }}>
                                 International Opportunities
                             </h1>
-                            <p style={{ color: '#94a3b8', margin: '0 0 1.5rem 0', fontSize: '1rem', position: 'relative' }}>
+                            <p style={{ color: '#ffffff', margin: '0 0 2rem 0', fontSize: '1.1rem', position: 'relative', zIndex: 1 }}>
                                 Discover professional roles around the globe with visa sponsorship options
                             </p>
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', maxWidth: '600px', margin: '0 auto', position: 'relative' }}>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', maxWidth: '700px', margin: '0 auto', position: 'relative', zIndex: 1 }}>
                                 <div style={{ position: 'relative' }}>
-                                    <span style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }}>🔍</span>
+                                    <span style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', fontSize: '1.2rem' }}>🔍</span>
                                     <input type="text" placeholder="Search jobs..." value={intlSearchTerm} onChange={(e) => setIntlSearchTerm(e.target.value)}
-                                        style={{ width: '100%', padding: '0.85rem 0.85rem 0.85rem 2.5rem', borderRadius: '14px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.06)', color: 'white', fontSize: '0.9rem', backdropFilter: 'blur(10px)', outline: 'none', transition: 'border 0.3s' }}
-                                        onFocus={e => e.target.style.borderColor = 'rgba(139,92,246,0.5)'} onBlur={e => e.target.style.borderColor = 'rgba(255,255,255,0.1)'} />
+                                        style={{ width: '100%', padding: '14px 14px 14px 44px', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(15, 23, 42, 0.6)', color: 'white', fontSize: '1rem', backdropFilter: 'blur(10px)', outline: 'none', transition: 'border 0.3s', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
+                                        onFocus={e => e.target.style.borderColor = 'rgba(99, 102, 241, 0.5)'} onBlur={e => e.target.style.borderColor = 'rgba(255,255,255,0.1)'} />
                                 </div>
                                 <div style={{ position: 'relative' }}>
-                                    <span style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }}>🏙️</span>
-                                    <input type="text" placeholder="Filter by city..." value={intlCountryFilter} onChange={(e) => setIntlCountryFilter(e.target.value)}
-                                        style={{ width: '100%', padding: '0.85rem 0.85rem 0.85rem 2.5rem', borderRadius: '14px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.06)', color: 'white', fontSize: '0.9rem', backdropFilter: 'blur(10px)', outline: 'none', transition: 'border 0.3s' }}
-                                        onFocus={e => e.target.style.borderColor = 'rgba(139,92,246,0.5)'} onBlur={e => e.target.style.borderColor = 'rgba(255,255,255,0.1)'} />
+                                    <span style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', fontSize: '1.2rem' }}>🏙️</span>
+                                    <input type="text" placeholder="Filter by country/city..." value={intlCountryFilter} onChange={(e) => setIntlCountryFilter(e.target.value)}
+                                        style={{ width: '100%', padding: '14px 14px 14px 44px', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(15, 23, 42, 0.6)', color: 'white', fontSize: '1rem', backdropFilter: 'blur(10px)', outline: 'none', transition: 'border 0.3s', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
+                                        onFocus={e => e.target.style.borderColor = 'rgba(99, 102, 241, 0.5)'} onBlur={e => e.target.style.borderColor = 'rgba(255,255,255,0.1)'} />
                                 </div>
                             </div>
-                            <p style={{ color: '#475569', fontSize: '0.8rem', margin: '1rem 0 0 0', position: 'relative' }}>{filteredIntlJobs.length} opportunities available</p>
+                            {filteredIntlJobs.length > 0 && (
+                                <p style={{ color: '#818cf8', fontSize: '0.9rem', margin: '1.5rem 0 0 0', position: 'relative', fontWeight: 600, zIndex: 1 }}>{filteredIntlJobs.length} opportunities available</p>
+                            )}
                         </div>
 
                         {/* Job Cards */}
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '1.25rem' }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: '28px', padding: '0 0 2rem' }}>
                             {loadingIntlJobs ? (
-                                <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '4rem 2rem', color: '#94a3b8' }}>
-                                    <p>Loading opportunities...</p>
+                                <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '4rem' }}>
+                                    <div className="spinner" style={{ width: '40px', height: '40px', border: '4px solid rgba(99, 102, 241, 0.2)', borderTopColor: '#6366f1', borderRadius: '50%', animation: 'spin 1s linear infinite', margin: '0 auto' }}></div>
                                 </div>
                             ) : filteredIntlJobs.length > 0 ? (
                                 filteredIntlJobs.map(job => (
-                                    <div key={job.id} style={{ background: 'linear-gradient(145deg, rgba(30,41,59,0.8), rgba(15,23,42,0.9))', borderRadius: '20px', padding: '1.5rem', display: 'flex', flexDirection: 'column', border: '1px solid rgba(255,255,255,0.06)', transition: 'all 0.3s', position: 'relative', overflow: 'hidden' }}
-                                        onMouseOver={e => { e.currentTarget.style.transform = 'translateY(-4px)'; e.currentTarget.style.borderColor = 'rgba(139,92,246,0.3)'; e.currentTarget.style.boxShadow = '0 12px 40px rgba(0,0,0,0.4)'; }}
-                                        onMouseOut={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)'; e.currentTarget.style.boxShadow = 'none'; }}>
-                                        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '3px', background: job.type === 'blue' ? 'linear-gradient(90deg, #3b82f6, #60a5fa)' : 'linear-gradient(90deg, #8b5cf6, #a78bfa)' }} />
-                                        <div style={{ display: 'flex', gap: '6px', marginBottom: '1rem', flexWrap: 'wrap' }}>
-                                            <span style={{ background: job.type === 'blue' ? 'rgba(59,130,246,0.12)' : 'rgba(139,92,246,0.12)', color: job.type === 'blue' ? '#60a5fa' : '#a78bfa', padding: '4px 12px', borderRadius: '20px', fontSize: '0.7rem', fontWeight: 600 }}>{job.type === 'blue' ? 'Blue-Collar' : 'White-Collar'}</span>
-                                            {job.visa_sponsored && <span style={{ background: 'rgba(16,185,129,0.12)', color: '#34d399', padding: '4px 12px', borderRadius: '20px', fontSize: '0.7rem', fontWeight: 600 }}>Visa Sponsored</span>}
+                                    <div key={job.id} style={{ 
+                                        background: 'white', 
+                                        borderRadius: '24px', 
+                                        padding: '28px', 
+                                        boxShadow: '0 10px 30px rgba(0,0,0,0.06)', 
+                                        border: '1px solid #e2e8f0', 
+                                        display: 'flex', 
+                                        flexDirection: 'column',
+                                        transition: 'all 0.3s ease',
+                                        position: 'relative',
+                                        overflow: 'hidden'
+                                    }}
+                                        onMouseOver={e => { e.currentTarget.style.transform = 'translateY(-8px)'; e.currentTarget.style.boxShadow = '0 20px 40px rgba(0,0,0,0.1)'; }}
+                                        onMouseOut={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 10px 30px rgba(0,0,0,0.06)'; }}>
+                                        
+                                        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '4px', background: job.type === 'blue' ? 'linear-gradient(90deg, #3b82f6, #60a5fa)' : 'linear-gradient(90deg, #4f46e5, #8b5cf6)' }} />
+                                        
+                                        <div style={{ display: 'flex', gap: '8px', marginBottom: '1.25rem', flexWrap: 'wrap' }}>
+                                            <span style={{ background: job.type === 'blue' ? '#eff6ff' : '#eef2ff', color: job.type === 'blue' ? '#2563eb' : '#4f46e5', padding: '6px 14px', borderRadius: '20px', fontSize: '0.75rem', fontWeight: 700, border: `1px solid ${job.type === 'blue' ? '#bfdbfe' : '#c7d2fe'}` }}>{job.type === 'blue' ? 'Blue-Collar' : 'White-Collar'}</span>
+                                            {job.visa_sponsored && <span style={{ background: '#ecfdf5', color: '#059669', padding: '6px 14px', borderRadius: '20px', fontSize: '0.75rem', fontWeight: 700, border: '1px solid #a7f3d0' }}>Visa Sponsored</span>}
                                         </div>
-                                        <h3 style={{ margin: '0 0 4px 0', fontSize: '1.15rem', color: '#f1f5f9', fontWeight: 600, textTransform: 'capitalize' }}>{job.title}</h3>
+                                        
+                                        <h3 style={{ margin: '0 0 8px 0', fontSize: '1.4rem', color: '#0f172a', fontWeight: 800, letterSpacing: '-0.02em', lineHeight: 1.3, textTransform: 'capitalize' }}>{job.title}</h3>
+                                        
                                         {job.employer && (
                                             <p 
-                                                style={{ color: '#8b5cf6', fontSize: '0.8rem', margin: '0 0 0.75rem 0', cursor: 'pointer', fontWeight: 600 }}
+                                                style={{ color: '#4f46e5', fontSize: '0.9rem', margin: '0 0 1rem 0', cursor: 'pointer', fontWeight: 600, transition: 'color 0.2s' }}
                                                 onClick={() => navigate(`/profile/${job.employer_id}`)}
+                                                onMouseOver={e => e.currentTarget.style.color = '#4338ca'}
+                                                onMouseOut={e => e.currentTarget.style.color = '#4f46e5'}
                                                 title="View Employer Profile"
                                             >
-                                                🏢 Posted by {job.employer.first_name} {job.employer.last_name} (View Profile 👤)
+                                                🏢 Posted by {job.employer.first_name} {job.employer.last_name} ↗
                                             </p>
                                         )}
-                                        <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
-                                            <span style={{ color: '#94a3b8', fontSize: '0.82rem', background: 'rgba(255,255,255,0.04)', padding: '5px 12px', borderRadius: '10px' }}>{job.city ? job.city + ', ' : ''}{job.country}</span>
-                                            <span style={{ color: '#4ade80', fontSize: '0.82rem', fontWeight: 600, background: 'rgba(74,222,128,0.08)', padding: '5px 12px', borderRadius: '10px' }}>{job.currency} {job.salary}</span>
+                                        
+                                        <div style={{ display: 'flex', gap: '10px', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
+                                            <span style={{ color: '#475569', fontSize: '0.9rem', background: '#f8fafc', padding: '8px 14px', borderRadius: '12px', border: '1px solid #e2e8f0' }}>📍 {job.city ? job.city + ', ' : ''}{job.country}</span>
+                                            <span style={{ color: '#059669', fontSize: '0.9rem', fontWeight: 700, background: '#ecfdf5', padding: '8px 14px', borderRadius: '12px', border: '1px solid #a7f3d0' }}>💰 {job.currency} {job.salary}</span>
                                         </div>
-                                        <p style={{ color: '#94a3b8', fontSize: '0.85rem', margin: '0 0 1.25rem 0', flex: 1, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', lineHeight: 1.6 }}>{job.description}</p>
+                                        
+                                        <p style={{ color: '#64748b', fontSize: '1rem', margin: '0 0 1.5rem 0', flex: 1, display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden', lineHeight: 1.6 }}>{job.description}</p>
+                                        
                                         <button onClick={() => handleApplyIntlJob(job.id)} disabled={job.applied}
-                                            style={{ width: '100%', padding: '0.75rem', borderRadius: '12px', border: 'none', background: 'linear-gradient(135deg, #8b5cf6, #7c3aed)', color: 'white', fontSize: '0.9rem', fontWeight: 600, cursor: 'pointer', transition: 'all 0.3s', marginTop: 'auto' }}
-                                            onMouseOver={e => { if(!e.currentTarget.disabled) { e.currentTarget.style.background = 'linear-gradient(135deg, #a78bfa, #8b5cf6)'; e.currentTarget.style.transform = 'scale(1.02)'; }}}
-                                            onMouseOut={e => { e.currentTarget.style.background = 'linear-gradient(135deg, #8b5cf6, #7c3aed)'; e.currentTarget.style.transform = 'scale(1)'; }}>
-                                            Apply Now
+                                            style={{ 
+                                                width: '100%', 
+                                                padding: '14px', 
+                                                borderRadius: '14px', 
+                                                border: 'none', 
+                                                background: job.applied ? '#cbd5e1' : 'linear-gradient(135deg, #6366f1, #4f46e5)', 
+                                                color: job.applied ? '#64748b' : 'white', 
+                                                fontSize: '1rem', 
+                                                fontWeight: 700, 
+                                                cursor: job.applied ? 'not-allowed' : 'pointer', 
+                                                transition: 'all 0.2s', 
+                                                marginTop: 'auto',
+                                                boxShadow: job.applied ? 'none' : '0 4px 14px rgba(99, 102, 241, 0.3)'
+                                            }}
+                                            onMouseOver={e => { if(!e.currentTarget.disabled) { e.currentTarget.style.transform = 'scale(1.02)'; e.currentTarget.style.boxShadow = '0 6px 20px rgba(99, 102, 241, 0.4)'; }}}
+                                            onMouseOut={e => { if(!e.currentTarget.disabled) { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.boxShadow = '0 4px 14px rgba(99, 102, 241, 0.3)'; }}}>
+                                            {job.applied ? 'Applied ✓' : 'Apply Now'}
                                         </button>
                                     </div>
                                 ))
                             ) : (
-                                <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '4rem 2rem', background: 'rgba(255,255,255,0.02)', borderRadius: '20px', border: '1px dashed rgba(255,255,255,0.1)' }}>
-                                    <span style={{ fontSize: '3rem', display: 'block', marginBottom: '1rem' }}>🌍</span>
-                                    <h3 style={{ color: '#e2e8f0', margin: '0 0 0.5rem 0' }}>No jobs found</h3>
-                                    <p style={{ color: '#64748b', margin: 0 }}>Try adjusting your search or filter criteria</p>
+                                <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '4rem 2rem', background: '#ffffff', borderRadius: '24px', border: '1px dashed #cbd5e1', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)' }}>
+                                    <h3 style={{ color: '#0f172a', margin: '0 0 0.75rem 0', fontSize: '1.5rem', fontWeight: 700 }}>No opportunities found</h3>
+                                    <p style={{ color: '#64748b', margin: 0, fontSize: '1.05rem' }}>Try adjusting your search or filter criteria to discover more roles.</p>
                                 </div>
                             )}
                         </div>
@@ -965,10 +1123,22 @@ const [travelAnnouncements, setTravelAnnouncements] = useState([]);
 
                                 {/* -------------------- TIME EXCHANGE TAB -------------------- */}
                 {activeTab === 'time-exchange' && (
-                    <section className="wc-welcome-section">
-                        <div className="wc-welcome-hero" style={{ background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)' }}>
-                            <h1>{t('te_header')}</h1>
-                            <p>{t('te_subtitle')}</p>
+                    <section className="wc-welcome-section" style={{ padding: '0 2rem' }}>
+                        {/* Premium Hero Banner */}
+                        <div style={{ 
+                            background: 'linear-gradient(135deg, #0f172a 0%, #312e81 50%, #0f172a 100%)', 
+                            padding: '3.5rem 2rem', 
+                            borderRadius: '24px', 
+                            marginBottom: '2.5rem', 
+                            textAlign: 'center', 
+                            position: 'relative',
+                            overflow: 'hidden',
+                            border: '1px solid rgba(99, 102, 241, 0.2)',
+                            boxShadow: '0 20px 40px rgba(0, 0, 0, 0.3)'
+                        }}>
+                            <div style={{ position: 'absolute', top: '-50%', right: '-10%', width: '300px', height: '300px', background: 'radial-gradient(circle, rgba(99,102,241,0.3) 0%, transparent 70%)', filter: 'blur(40px)' }}></div>
+                            <h1 style={{ fontSize: '2.5rem', color: '#ffffff', margin: '0 0 1rem', position: 'relative', zIndex: 1, textShadow: '0 2px 10px rgba(0,0,0,0.5)' }}>{t('te_header')}</h1>
+                            <p style={{ color: '#ffffff', margin: 0, fontSize: '1.1rem', position: 'relative', zIndex: 1 }}>{t('te_subtitle')}</p>
                         </div>
 
                         <div className="te-container" style={{ padding: '2rem', maxWidth: '1200px', margin: '0 auto', display: 'grid', gridTemplateColumns: '1fr 1.5fr', gap: '2rem' }}>
@@ -1279,9 +1449,27 @@ const [travelAnnouncements, setTravelAnnouncements] = useState([]);
                 {/* -------------------- MY APPLICATIONS TAB -------------------- */}
                 {activeTab === 'my-jobs' && (
                     <section className="wc-job-results">
-                        <div className="wc-results-header">
-                            <h2>{t('my_apps_title')}</h2>
-                            <span className="wc-sort-label">{t('total_applied')} <strong>{myApps.length}</strong></span>
+                        <div style={{ 
+                            background: 'linear-gradient(135deg, #0f172a 0%, #1e3a8a 50%, #0f172a 100%)', 
+                            padding: '3.5rem 2rem', 
+                            borderRadius: '24px', 
+                            marginBottom: '2.5rem', 
+                            textAlign: 'center', 
+                            position: 'relative', 
+                            overflow: 'hidden', 
+                            border: '1px solid rgba(59, 130, 246, 0.2)',
+                            boxShadow: '0 20px 40px rgba(0, 0, 0, 0.3)'
+                        }}>
+                            <div style={{ position: 'absolute', top: '-50%', left: '-10%', width: '300px', height: '300px', background: 'radial-gradient(circle, rgba(59,130,246,0.3) 0%, transparent 70%)', filter: 'blur(40px)' }}></div>
+                            <h1 style={{ fontSize: '2.5rem', margin: '0 0 1rem 0', color: '#ffffff', fontWeight: 800, position: 'relative', zIndex: 1, textShadow: '0 2px 10px rgba(0,0,0,0.5)' }}>
+                                📋 {t('my_apps_title')}
+                            </h1>
+                            <p style={{ color: '#cbd5e1', margin: '0 0 1.5rem 0', fontSize: '1.1rem', position: 'relative', zIndex: 1 }}>
+                                Track your applied jobs and manage your professional opportunities
+                            </p>
+                            <div style={{ display: 'inline-block', background: 'rgba(255,255,255,0.1)', padding: '8px 20px', borderRadius: '100px', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.2)', color: '#ffffff', fontWeight: 600, fontSize: '0.95rem', position: 'relative', zIndex: 1 }}>
+                                {t('total_applied')} <span style={{ color: '#60a5fa', marginLeft: '5px' }}>{myApps.length}</span>
+                            </div>
                         </div>
 
                         {loadingApps ? (

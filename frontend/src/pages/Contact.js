@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
 import './PublicPages.css';
+import { BASE_URL } from '../utils/api';
 
 const Contact = () => {
     const { user } = useAuth();
@@ -25,7 +26,7 @@ const Contact = () => {
         setIsSubmitting(true);
 
         try {
-            const response = await fetch('http://localhost:5000/api/contact', {
+            const response = await fetch(`${BASE_URL}/api/contact`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(formData)

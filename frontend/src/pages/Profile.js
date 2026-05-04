@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import '../index.css';
 import StarRating from '../components/StarRating';
 import VoiceProfileAssistant from '../components/VoiceProfileAssistant';
+import { BASE_URL } from '../utils/api';
 
 const Profile = ({ user, logout }) => {
     const [isEditing, setIsEditing] = useState(false);
@@ -52,7 +53,7 @@ const Profile = ({ user, logout }) => {
         const fetchProfile = async () => {
             try {
                 const token = sessionStorage.getItem('token'); // or localStorage
-                const response = await fetch('http://localhost:5000/api/profile', {
+                const response = await fetch(`${BASE_URL}/api/profile`, {
                     headers: {
                         'Authorization': `Bearer ${token}`
                     }
@@ -97,7 +98,7 @@ const Profile = ({ user, logout }) => {
     const fetchHiringHistory = async () => {
         try {
             const token = sessionStorage.getItem('token');
-            const response = await fetch('http://localhost:5000/api/profile/hiring-history', {
+            const response = await fetch(`${BASE_URL}/api/profile/hiring-history`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             if (response.ok) {
@@ -124,7 +125,7 @@ const Profile = ({ user, logout }) => {
 
         try {
             const token = sessionStorage.getItem('token');
-            const response = await fetch('http://localhost:5000/api/profile/upload-avatar', {
+            const response = await fetch(`${BASE_URL}/api/profile/upload-avatar`, {
                 method: 'POST',
                 headers: { 'Authorization': `Bearer ${token}` },
                 body: formData
@@ -154,7 +155,7 @@ const Profile = ({ user, logout }) => {
 
         try {
             const token = sessionStorage.getItem('token');
-            const response = await fetch('http://localhost:5000/api/profile/upload-verification', {
+            const response = await fetch(`${BASE_URL}/api/profile/upload-verification`, {
                 method: 'POST',
                 headers: { 'Authorization': `Bearer ${token}` },
                 body: formData
@@ -189,7 +190,7 @@ const Profile = ({ user, logout }) => {
                 formData.append('cv', cvFile);
 
                 const token = sessionStorage.getItem('token');
-                const cvResponse = await fetch('http://localhost:5000/api/profile/upload-cv', {
+                const cvResponse = await fetch(`${BASE_URL}/api/profile/upload-cv`, {
                     method: 'POST',
                     headers: { 'Authorization': `Bearer ${token}` },
                     body: formData
@@ -245,7 +246,7 @@ const Profile = ({ user, logout }) => {
                 website: profile.website
             };
 
-            const response = await fetch('http://localhost:5000/api/profile', {
+            const response = await fetch(`${BASE_URL}/api/profile`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
