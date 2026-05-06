@@ -209,3 +209,84 @@
     opacity: 0.7;
     cursor: not-allowed;
 }
+
+/* ==========================================================================
+   RESPONSIVE DESIGN — PUBLIC PAGES
+   ========================================================================== */
+
+/* TABLET PORTRAIT (≤ 768px) */
+@media (max-width: 768px) {
+    .public-navbar {
+        padding: 1rem 5%;
+    }
+    
+    .public-logo {
+        font-size: 1.8rem;
+    }
+    
+    .public-back-btn {
+        padding: 0.5rem 1rem;
+        font-size: 0.9rem;
+    }
+    
+    .public-content {
+        margin: 2rem auto;
+        padding: 0 1rem;
+    }
+    
+    .public-glass-card {
+        padding: 2rem 1.5rem;
+        border-radius: 16px;
+    }
+    
+    .public-title {
+        font-size: 2.2rem;
+    }
+    
+    .public-subtitle {
+        font-size: 1rem;
+        margin-bottom: 2rem;
+    }
+    
+    .about-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* MOBILE PHONES (≤ 480px) */
+@media (max-width: 480px) {
+    .public-navbar {
+        flex-direction: column;
+        gap: 1rem;
+        padding: 1rem;
+    }
+    
+    .public-logo {
+        font-size: 1.6rem;
+    }
+    
+    .public-content {
+        margin: 1.5rem auto;
+    }
+    
+    .public-glass-card {
+        padding: 1.5rem 1rem;
+    }
+    
+    .public-title {
+        font-size: 1.8rem;
+    }
+    
+    .about-section h2 {
+        font-size: 1.3rem;
+    }
+    
+    .contact-input, .contact-textarea {
+        padding: 0.8rem;
+    }
+    
+    .btn-submit {
+        padding: 0.8rem;
+        font-size: 1rem;
+    }
+}

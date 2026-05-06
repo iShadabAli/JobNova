@@ -185,19 +185,20 @@ const Home = () => {
 
     return (
         <div className={`home-container ${isUrdu ? 'rtl' : 'ltr'}`}>
-            {/* Dark Hero Section */}
-            <div className="hero-wrapper">
-                <nav className="home-navbar">
-                    <div className="logo-container">
-                        <h1 className="logo">JobNova</h1>
-                    </div>
-                    <div className="nav-actions">
-                        <LanguageToggle />
-                        <button className="nav-login-btn" onClick={() => navigate('/login')}>{t('login', 'Login')}</button>
-                        <button className="nav-register-btn" onClick={() => navigate('/register')}>{t('register', 'Register')}</button>
-                    </div>
-                </nav>
+            {/* Full-width Navbar */}
+            <nav className="home-navbar">
+                <div className="logo-container">
+                    <h1 className="logo">JobNova</h1>
+                </div>
+                <div className="nav-actions">
+                    <LanguageToggle />
+                    <button className="nav-login-btn" onClick={() => navigate('/login')}>{t('login', 'Login')}</button>
+                    <button className="nav-register-btn" onClick={() => navigate('/register')}>{t('register', 'Register')}</button>
+                </div>
+            </nav>
 
+            {/* Compact Hero Card */}
+            <div className="hero-wrapper">
                 <header className="hero-section">
                     <div className="hero-content">
                         <h1 className="hero-title">{t('heroTitle') || "Find Your Dream Job Today"}</h1>

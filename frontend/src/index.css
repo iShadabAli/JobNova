@@ -2149,3 +2149,647 @@ input:checked+.slider:before {
 .premium-offer-banner {
   animation: bannerPulse 3s infinite ease-in-out;
 }
+
+/* ==========================================================================
+   RESPONSIVE DESIGN — GLOBAL MEDIA QUERIES
+   3 Breakpoints: 1024px (tablet landscape), 768px (tablet), 480px (mobile)
+   ========================================================================== */
+
+/* ======================== TABLET LANDSCAPE (≤ 1024px) ======================== */
+@media (max-width: 1024px) {
+
+  /* --- Navbar --- */
+  .wc-navbar {
+    padding: 0.75rem 1.5rem;
+  }
+
+  .wc-nav-link,
+  .wc-nav-btn {
+    padding: 0.5rem 1rem;
+    font-size: 0.85rem;
+  }
+
+  /* --- Main Content --- */
+  .wc-main-content {
+    padding: 0 1.5rem;
+    margin: 2rem auto;
+  }
+
+  /* --- Hero / Search Sections --- */
+  .wc-search-section {
+    padding: 4rem 2rem;
+    border-radius: 20px;
+  }
+
+  .wc-search-section h1 {
+    font-size: 2.5rem;
+  }
+
+  .bc-search-section {
+    padding: 3rem 1.5rem;
+  }
+
+  .bc-search-section h1 {
+    font-size: 2rem;
+  }
+
+  /* --- Job Grid --- */
+  .wc-job-list {
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 1.5rem;
+  }
+
+  /* --- Mode Switcher --- */
+  .mode-switcher-container {
+    gap: 1rem;
+  }
+
+  .mode-btn {
+    padding: 1.25rem;
+  }
+
+  /* --- Employer Stats --- */
+  .emp-stats-grid {
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  }
+
+  /* --- Employer Table --- */
+  .emp-table-container {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .emp-job-table {
+    min-width: 600px;
+  }
+
+  /* --- Welcome Dashboard --- */
+  .wc-welcome-hero h1 {
+    font-size: 2.5rem;
+  }
+
+  .wc-dashboard-grid {
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1.5rem;
+  }
+}
+
+
+/* ======================== TABLET PORTRAIT (≤ 768px) ======================== */
+@media (max-width: 768px) {
+
+  /* --- Navbar — Compact layout --- */
+  .wc-navbar {
+    padding: 0.75rem 1rem;
+    gap: 0.5rem;
+  }
+
+  .wc-nav-brand {
+    font-size: 1.25rem;
+  }
+
+  .wc-nav-links {
+    gap: 0.25rem;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+
+  .wc-nav-link,
+  .wc-nav-btn {
+    padding: 0.4rem 0.75rem;
+    font-size: 0.8rem;
+  }
+
+  .wc-user-menu {
+    gap: 0.75rem;
+  }
+
+  .wc-user-greeting {
+    display: none;
+  }
+
+  /* --- Main Content --- */
+  .wc-main-content {
+    padding: 0 1rem;
+    margin: 1.5rem auto;
+  }
+
+  /* --- Hero / Search --- */
+  .wc-search-section {
+    padding: 3rem 1.5rem;
+    border-radius: 16px;
+    margin-bottom: 2rem;
+  }
+
+  .wc-search-section h1 {
+    font-size: 2rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .wc-search-bar {
+    flex-direction: column;
+    border-radius: 16px;
+    padding: 0.75rem;
+  }
+
+  .wc-search-bar input {
+    padding: 0.875rem 1rem;
+    font-size: 1rem;
+  }
+
+  .wc-filter-select {
+    border-left: none;
+    border-top: 1px solid #e2e8f0;
+    padding: 0.75rem 1rem;
+    width: 100%;
+  }
+
+  .wc-search-bar .btn-primary {
+    width: 100%;
+    border-radius: 12px;
+    padding: 0.875rem;
+  }
+
+  .bc-search-section {
+    padding: 2.5rem 1rem;
+    border-radius: 16px;
+  }
+
+  .bc-search-section h1 {
+    font-size: 1.75rem;
+  }
+
+  .bc-search-section .subtitle {
+    font-size: 1rem;
+  }
+
+  /* --- Blue Collar Glass Card --- */
+  .bc-glass-card {
+    padding: 1rem 1.25rem;
+  }
+
+  /* --- Job Grid --- */
+  .wc-job-list {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  .wc-job-card {
+    border-radius: 16px;
+  }
+
+  .wc-job-main {
+    padding: 1.5rem;
+    gap: 1rem;
+  }
+
+  .wc-job-info h3 {
+    font-size: 1.2rem;
+  }
+
+  .wc-job-footer {
+    padding: 1rem 1.5rem;
+  }
+
+  /* --- Mode Switcher — Stack vertically --- */
+  .mode-switcher-container {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .mode-btn {
+    padding: 1rem;
+  }
+
+  .mode-btn .icon {
+    font-size: 1.5rem;
+    width: 2.5rem;
+    height: 2.5rem;
+  }
+
+  .mode-btn .title {
+    font-size: 1rem;
+  }
+
+  /* --- Employer --- */
+  .emp-actions-row {
+    flex-direction: column;
+    gap: 1rem;
+    align-items: stretch;
+  }
+
+  .emp-stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+  }
+
+  .emp-stat-card {
+    padding: 1.25rem;
+  }
+
+  .emp-stat-card .stat-number {
+    font-size: 2rem;
+  }
+
+  .emp-job-table th,
+  .emp-job-table td {
+    padding: 0.75rem 1rem;
+    font-size: 0.85rem;
+  }
+
+  /* --- Profile --- */
+  .profile-info-row {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding: 0 1.5rem 1.5rem;
+  }
+
+  .profile-avatar {
+    width: 80px;
+    height: 80px;
+    font-size: 2rem;
+  }
+
+  .profile-text h1 {
+    font-size: 1.4rem;
+  }
+
+  .profile-card {
+    padding: 1.5rem;
+  }
+
+  /* --- Status Card --- */
+  .status-card {
+    flex-direction: column;
+    text-align: center;
+    padding: 1.25rem;
+  }
+
+  /* --- Modals --- */
+  .modal-content {
+    padding: 1.5rem;
+    margin: 0.5rem;
+    max-width: calc(100vw - 1rem);
+    border-radius: 16px;
+  }
+
+  .modal-content h2 {
+    font-size: 1.3rem;
+  }
+
+  .modal-actions {
+    flex-direction: column;
+  }
+
+  .modal-actions .btn {
+    width: 100%;
+  }
+
+  /* --- Auth Pages --- */
+  .auth-card {
+    padding: 2rem 1.5rem;
+    border-radius: 16px;
+  }
+
+  .auth-title {
+    font-size: 1.6rem;
+  }
+
+  .auth-subtitle {
+    font-size: 1rem;
+  }
+
+  .role-grid-mini {
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 0.5rem;
+  }
+
+  .role-card-mini {
+    padding: 0.75rem 0.25rem;
+    font-size: 0.75rem;
+  }
+
+  /* --- Days Selector --- */
+  .days-selector {
+    gap: 0.35rem;
+  }
+
+  .day-btn {
+    padding: 0.4rem 0.6rem;
+    font-size: 0.8rem;
+  }
+
+  /* --- Hours Selector --- */
+  .hours-selector {
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  /* --- Welcome Dashboard --- */
+  .wc-welcome-section {
+    padding: 2rem 1rem;
+  }
+
+  .wc-welcome-hero {
+    margin-bottom: 2rem;
+  }
+
+  .wc-welcome-hero h1 {
+    font-size: 2rem;
+  }
+
+  .wc-welcome-hero p {
+    font-size: 1.05rem;
+  }
+
+  .wc-dashboard-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  .wc-dash-card {
+    padding: 2rem 1.5rem;
+  }
+
+  .wc-dash-card-icon {
+    font-size: 2.5rem;
+    margin-bottom: 1rem;
+  }
+
+  .wc-dash-card h3 {
+    font-size: 1.25rem;
+  }
+
+  /* --- Voice Mic Inline --- */
+  .voice-mic-inline {
+    width: 28px;
+    height: 28px;
+  }
+
+  /* --- Utility --- */
+  .container {
+    padding: 0 1rem;
+  }
+
+  /* --- Back to Dashboard Button --- */
+  .btn-back-dashboard {
+    font-size: 0.8rem;
+    padding: 0.4rem 1rem;
+  }
+}
+
+
+/* ======================== MOBILE PHONES (≤ 480px) ======================== */
+@media (max-width: 480px) {
+
+  /* --- Navbar — Ultra compact --- */
+  .wc-navbar {
+    padding: 0.6rem 0.75rem;
+    flex-wrap: wrap;
+  }
+
+  .wc-nav-brand {
+    font-size: 1.1rem;
+  }
+
+  .wc-nav-links {
+    order: 3;
+    width: 100%;
+    justify-content: center;
+    gap: 0.15rem;
+    border-top: 1px solid var(--border-color);
+    padding-top: 0.5rem;
+    margin-top: 0.5rem;
+  }
+
+  .wc-nav-link,
+  .wc-nav-btn {
+    padding: 0.35rem 0.5rem;
+    font-size: 0.7rem;
+  }
+
+  /* --- Main Content --- */
+  .wc-main-content {
+    padding: 0 0.75rem;
+    margin: 1rem auto;
+  }
+
+  /* --- Hero / Search --- */
+  .wc-search-section {
+    padding: 2rem 1rem;
+    border-radius: 12px;
+    margin-bottom: 1.5rem;
+  }
+
+  .wc-search-section h1 {
+    font-size: 1.6rem;
+    margin-bottom: 1rem;
+    letter-spacing: -0.5px;
+  }
+
+  .bc-search-section {
+    padding: 1.5rem 0.75rem;
+    border-radius: 12px;
+  }
+
+  .bc-search-section h1 {
+    font-size: 1.4rem;
+  }
+
+  .bc-search-section .subtitle {
+    font-size: 0.9rem;
+  }
+
+  .bc-glass-card {
+    padding: 0.75rem 1rem;
+    border-radius: 12px;
+  }
+
+  /* --- Search Bar --- */
+  .wc-search-bar input {
+    padding: 0.75rem;
+    font-size: 0.9rem;
+  }
+
+  .wc-search-bar .btn-primary {
+    padding: 0.75rem;
+    font-size: 0.95rem;
+  }
+
+  /* --- Job Grid --- */
+  .wc-job-main {
+    padding: 1.25rem;
+  }
+
+  .wc-job-info h3 {
+    font-size: 1.1rem;
+  }
+
+  .wc-job-meta {
+    font-size: 0.8rem;
+    gap: 0.5rem;
+  }
+
+  .wc-job-footer {
+    padding: 0.75rem 1.25rem;
+    gap: 0.5rem;
+  }
+
+  .wc-tag,
+  .wc-salary-tag,
+  .wc-type-tag,
+  .wc-skill-tag {
+    font-size: 0.7rem;
+    padding: 0.3rem 0.75rem;
+  }
+
+  /* --- Mode Switcher --- */
+  .mode-btn .title {
+    font-size: 0.9rem;
+  }
+
+  .mode-btn .subtitle {
+    font-size: 0.8rem;
+  }
+
+  /* --- Employer --- */
+  .emp-stats-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem;
+  }
+
+  .emp-stat-card {
+    padding: 1rem;
+  }
+
+  .emp-stat-card .stat-number {
+    font-size: 1.75rem;
+  }
+
+  .emp-stat-card h3 {
+    font-size: 0.85rem;
+  }
+
+  /* --- Profile --- */
+  .profile-cover {
+    height: 100px;
+  }
+
+  .profile-info-row {
+    margin-top: -2rem;
+    padding: 0 1rem 1rem;
+  }
+
+  .profile-avatar {
+    width: 64px;
+    height: 64px;
+    font-size: 1.5rem;
+  }
+
+  .profile-text h1 {
+    font-size: 1.2rem;
+  }
+
+  .profile-card {
+    padding: 1.25rem;
+  }
+
+  .profile-card h3 {
+    font-size: 1rem;
+  }
+
+  /* --- Auth --- */
+  .auth-container {
+    padding: 1rem;
+  }
+
+  .auth-card {
+    padding: 1.5rem 1.25rem;
+  }
+
+  .auth-title {
+    font-size: 1.4rem;
+  }
+
+  .role-grid-mini {
+    grid-template-columns: 1fr;
+    gap: 0.5rem;
+  }
+
+  .role-card-mini {
+    flex-direction: row;
+    padding: 0.75rem 1rem;
+    font-size: 0.85rem;
+  }
+
+  /* --- Modal --- */
+  .modal-overlay {
+    padding: 0.5rem;
+    align-items: flex-end;
+  }
+
+  .modal-content {
+    padding: 1.25rem;
+    border-radius: 16px 16px 0 0;
+    max-height: 85vh;
+  }
+
+  /* --- Welcome --- */
+  .wc-welcome-hero h1 {
+    font-size: 1.6rem;
+  }
+
+  .wc-welcome-hero p {
+    font-size: 0.95rem;
+  }
+
+  .wc-dash-card {
+    padding: 1.5rem 1rem;
+  }
+
+  .wc-dash-card-icon {
+    font-size: 2rem;
+  }
+
+  .wc-dash-card h3 {
+    font-size: 1.1rem;
+  }
+
+  .wc-dash-card p {
+    font-size: 0.9rem;
+  }
+
+  /* --- Status Card --- */
+  .status-card {
+    padding: 1rem;
+  }
+
+  .status-text span:first-child {
+    font-size: 0.95rem;
+  }
+
+  /* --- Days / Hours --- */
+  .day-btn {
+    padding: 0.35rem 0.5rem;
+    font-size: 0.75rem;
+  }
+
+  .hours-selector input[type="time"] {
+    padding: 0.4rem;
+    font-size: 0.85rem;
+  }
+
+  /* --- Buttons --- */
+  .btn {
+    padding: 0.625rem 1.25rem;
+    font-size: 0.875rem;
+  }
+
+  .btn-back-dashboard {
+    font-size: 0.75rem;
+    padding: 0.35rem 0.75rem;
+    gap: 0.25rem;
+  }
+}
+
