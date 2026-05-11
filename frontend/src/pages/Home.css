@@ -212,18 +212,28 @@ section {
     margin-right: auto;
 }
 
-/* Search Box (Hero) */
+/* Search Box (Hero) — Compact by default, expands on focus */
 .hero-search-box {
     display: flex;
     background: #ffffff;
     border-radius: 999px;
-    padding: 0.5rem;
     align-items: center;
-    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.3);
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+    transition: all 0.45s cubic-bezier(0.4, 0, 0.2, 1);
+    max-width: 100%;
+    margin: 0 auto;
 }
 
-.hero-search-box:focus-within {
+/* Compact state — smaller, pill-like */
+.hero-search-box.search-compact {
+    max-width: 520px;
+    padding: 0.3rem;
+}
+
+/* Expanded state — full width, larger inputs */
+.hero-search-box.search-expanded {
+    max-width: 900px;
+    padding: 0.5rem;
     transform: translateY(-2px);
     box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
 }
@@ -232,18 +242,39 @@ section {
     display: flex;
     align-items: center;
     flex: 1;
+    gap: 0.5rem;
+    transition: padding 0.35s ease;
+    overflow: hidden;
+}
+
+/* Compact input sizing */
+.search-compact .search-input-group {
+    padding: 0.35rem 1rem;
+}
+
+/* Expanded input sizing */
+.search-expanded .search-input-group {
     padding: 0.5rem 1.5rem;
-    gap: 0.75rem;
 }
 
 .search-input-group input {
     background: transparent;
     border: none;
     color: #0f172a;
-    font-size: 1.1rem;
     width: 100%;
     outline: none;
     font-weight: 500;
+    transition: font-size 0.35s ease;
+}
+
+/* Compact font */
+.search-compact .search-input-group input {
+    font-size: 0.95rem;
+}
+
+/* Expanded font */
+.search-expanded .search-input-group input {
+    font-size: 1.1rem;
 }
 
 .search-input-group input::placeholder {
@@ -251,17 +282,42 @@ section {
 }
 
 .search-icon {
-    font-size: 1.2rem;
+    font-size: 1.1rem;
     color: #64748b;
+    transition: font-size 0.35s ease;
+}
+
+.search-expanded .search-icon {
+    font-size: 1.2rem;
 }
 
 .divider {
     width: 1px;
-    height: 40px;
     background: #e2e8f0;
+    transition: height 0.35s ease;
+}
+
+.search-compact .divider {
+    height: 28px;
+}
+
+.search-expanded .divider {
+    height: 40px;
 }
 
 .search-btn {
+    font-size: 1rem;
+    white-space: nowrap;
+    transition: padding 0.35s ease, font-size 0.35s ease;
+}
+
+.search-compact .search-btn {
+    padding: 0.85rem 2rem;
+    font-size: 0.95rem;
+    margin-left: 0.3rem;
+}
+
+.search-expanded .search-btn {
     padding: 1.2rem 3rem;
     font-size: 1.1rem;
     margin-left: 0.5rem;
@@ -647,22 +703,29 @@ section {
 
 /* Responsive */
 @media (max-width: 992px) {
-    .hero-search-box {
+    .hero-search-box,
+    .hero-search-box.search-compact,
+    .hero-search-box.search-expanded {
         flex-direction: column;
         border-radius: 1.5rem;
         padding: 1rem;
         gap: 1rem;
+        max-width: 100%;
     }
     .divider {
         width: 100%;
         height: 1px;
         background: #e2e8f0;
     }
-    .search-input-group {
+    .search-input-group,
+    .search-compact .search-input-group,
+    .search-expanded .search-input-group {
         width: 100%;
         padding: 0.5rem;
     }
-    .search-btn {
+    .search-btn,
+    .search-compact .search-btn,
+    .search-expanded .search-btn {
         width: 100%;
         margin-left: 0;
         border-radius: 0.5rem;
@@ -798,13 +861,18 @@ section {
     .hero-subtitle {
         font-size: 1rem;
     }
-    .hero-search-box {
+    .hero-search-box,
+    .hero-search-box.search-compact,
+    .hero-search-box.search-expanded {
         flex-direction: column;
         border-radius: 16px;
         padding: 1rem;
         gap: 0.5rem;
+        max-width: 100%;
     }
-    .search-input-group {
+    .search-input-group,
+    .search-compact .search-input-group,
+    .search-expanded .search-input-group {
         width: 100%;
         padding: 0.5rem;
         border-bottom: 1px solid #e2e8f0;
@@ -812,7 +880,9 @@ section {
     .divider {
         display: none;
     }
-    .search-btn {
+    .search-btn,
+    .search-compact .search-btn,
+    .search-expanded .search-btn {
         width: 100%;
         margin-left: 0;
         margin-top: 0.5rem;
@@ -832,10 +902,6 @@ section {
     }
     .category-card {
         padding: 1.2rem;
-    }
-    .featured-employer-card {
-        flex: 0 0 250px;
-        padding: 1.5rem;
     }
     .footer-content {
         flex-direction: column;
@@ -889,26 +955,11 @@ section {
     .category-icon {
         font-size: 2rem;
     }
-    .category-title {
-        font-size: 0.9rem;
-    }
-    .featured-employer-card {
-        flex: 0 0 200px;
-    }
-    .emp-logo-placeholder {
-        width: 60px;
-        height: 60px;
-        font-size: 1.5rem;
-    }
     .search-results-grid {
         grid-template-columns: 1fr;
     }
     .app-buttons {
         flex-direction: column;
         align-items: center;
-    }
-    .app-btn {
-        width: 100%;
-        justify-content: center;
     }
 }

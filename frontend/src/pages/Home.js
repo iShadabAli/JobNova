@@ -16,6 +16,7 @@ const Home = () => {
     const [fetchedJobs, setFetchedJobs] = useState([]);
     const [searchResults, setSearchResults] = useState([]);
     const [isSearching, setIsSearching] = useState(false);
+    const [searchFocused, setSearchFocused] = useState(false);
     const [hasSearched, setHasSearched] = useState(false);
     const [activeIndustry, setActiveIndustry] = useState(null);
     const searchResultsRef = useRef(null);
@@ -204,7 +205,7 @@ const Home = () => {
                         <h1 className="hero-title">{t('heroTitle') || "Find Your Dream Job Today"}</h1>
                         <p className="hero-subtitle">{t('heroSubtitle') || "Connecting top talent with the best employers across Pakistan."}</p>
                         
-                        <form className="hero-search-box" onSubmit={handleSearch}>
+                        <form className={`hero-search-box ${searchFocused || searchQuery || location ? 'search-expanded' : 'search-compact'}`} onSubmit={handleSearch}>
                             <div className="search-input-group">
                                 <span className="search-icon">🔍</span>
                                 <input 
@@ -212,6 +213,8 @@ const Home = () => {
                                     placeholder={isUrdu ? "نوکری تلاش کریں..." : "Job Title, Skill or Company"} 
                                     value={searchQuery}
                                     onChange={(e) => setSearchQuery(e.target.value)}
+                                    onFocus={() => setSearchFocused(true)}
+                                    onBlur={() => setSearchFocused(false)}
                                 />
                             </div>
                             <div className="divider"></div>
@@ -222,6 +225,8 @@ const Home = () => {
                                     placeholder={isUrdu ? "شہر..." : "City or Location"} 
                                     value={location}
                                     onChange={(e) => setLocation(e.target.value)}
+                                    onFocus={() => setSearchFocused(true)}
+                                    onBlur={() => setSearchFocused(false)}
                                 />
                             </div>
                             <button type="submit" className="btn-primary search-btn">
@@ -290,23 +295,6 @@ const Home = () => {
             {/* Light Body Content Starts Here */}
             <div className="light-body">
                 
-                {/* Categories Section */}
-                <section className="categories-section">
-                    <div className="section-header text-center">
-                        <h2 className="dark-text">{isUrdu ? "صنعت کے لحاظ سے نوکریاں" : "Browse by Industry"}</h2>
-                        <p className="light-text">{isUrdu ? "اپنے کیریئر کے لیے بہترین شعبہ منتخب کریں" : "Find jobs in your preferred sector"}</p>
-                    </div>
-                    <div className="categories-grid">
-                        {categories.map(cat => (
-                            <div key={cat.id} className={`category-card light-card ${activeIndustry === cat.name ? 'active-industry' : ''}`} onClick={() => handleIndustryClick(cat)}>
-                                <div className="category-icon">{cat.icon}</div>
-                                <h3 className="dark-text">{isUrdu ? cat.nameUr : cat.name}</h3>
-                                <span className="category-count light-text">{industryCounts[cat.id] !== undefined ? `${industryCounts[cat.id]} ${isUrdu ? 'نوکریاں' : 'Jobs'}` : (isUrdu ? 'لوڈ ہو رہا ہے...' : 'Loading...')}</span>
-                            </div>
-                        ))}
-                    </div>
-                </section>
-
                 {/* Recent Jobs Tabbed Section */}
                 <section className="featured-jobs-section bg-gray">
                     <div className="section-header text-center">
@@ -360,6 +348,23 @@ const Home = () => {
                                 {isUrdu ? "تمام نوکریاں دیکھیں" : "View All Jobs"}
                             </button>
                         </div>
+                    </div>
+                </section>
+
+                {/* Categories Section */}
+                <section className="categories-section">
+                    <div className="section-header text-center">
+                        <h2 className="dark-text">{isUrdu ? "صنعت کے لحاظ سے نوکریاں" : "Browse by Industry"}</h2>
+                        <p className="light-text">{isUrdu ? "اپنے کیریئر کے لیے بہترین شعبہ منتخب کریں" : "Find jobs in your preferred sector"}</p>
+                    </div>
+                    <div className="categories-grid">
+                        {categories.map(cat => (
+                            <div key={cat.id} className={`category-card light-card ${activeIndustry === cat.name ? 'active-industry' : ''}`} onClick={() => handleIndustryClick(cat)}>
+                                <div className="category-icon">{cat.icon}</div>
+                                <h3 className="dark-text">{isUrdu ? cat.nameUr : cat.name}</h3>
+                                <span className="category-count light-text">{industryCounts[cat.id] !== undefined ? `${industryCounts[cat.id]} ${isUrdu ? 'نوکریاں' : 'Jobs'}` : (isUrdu ? 'لوڈ ہو رہا ہے...' : 'Loading...')}</span>
+                            </div>
+                        ))}
                     </div>
                 </section>
 
